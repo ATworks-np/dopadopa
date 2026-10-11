@@ -195,3 +195,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - Build82a98971 SUCCESS、Cloud Run00010-gth 100%配置完了、session40421終端成功。公開世代API検証session49082 PASS/cleanuptrue。
 - 公開API強制クラッシュ試験は未実施。中断/障害復帰は実Firestoreストア検証で確認。現コードとCloud Runは削除lease修正で一致。
 - 次は同期固定payloadと後発501件以上の観測の扱いを確認、Agent Engine配置、提出物。実機は再開指示まで待機、WebはMVP対象外。
+
+## DG-008 後発観測上限と固定再送
+- 固定snapshotのIDsでRoom元イベントを取得して同意/整合性を検証。後発501件を含む最新timelineによる再送拒否を修正、初回送信上限は維持。端末のみ件数の切捨ても解消。
+- session73658終端SUCCESS、単体18件/assembleDebug/クラウド1件PASS。クラウド2件/端末503件/遅延501表示、finally cleanup成功。android-frozen-retry-overflow.xml。Androidのみ変更、公開API00010-gthの変更不要。
+- 次はAgent Engine基盤の追加配置とAndroid中心の提出物整備。実機収集/最終E2Eはユーザー再開指示まで待機。WebはMVP対象外。

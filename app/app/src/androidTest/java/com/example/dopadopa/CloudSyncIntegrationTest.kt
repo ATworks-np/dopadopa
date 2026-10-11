@@ -62,6 +62,10 @@ class CloudSyncIntegrationTest {
             assertTrue(queue.getLong("retry:$retryKey", 0) > System.currentTimeMillis())
             dao.insertEvent(InteractionEvent("late-sample", "sample-allowed", "youtube", "com.google.android.youtube", now - 2000,
                 "CLICK", "後から保存した架空イベント", "available", "clicked_node", "direct", "sample", revision))
+            repeat(500) { index ->
+                dao.insertEvent(InteractionEvent("late-extra-$index", "sample-allowed", "youtube", "com.google.android.youtube", now - 2000,
+                    "CLICK", null, "missing", "none", "unavailable", "sample", revision))
+            }
             dao.saveGoal(UserGoal("changed-sample-goal", "再送後に変更した架空ゴール", "youtube", now, "cloud"))
             // Expedite the retry in this fixture; production retains its backoff.
             queue.edit().remove("retry:$retryKey").commit()
@@ -69,8 +73,8 @@ class CloudSyncIntegrationTest {
             assertEquals(frozen.json, dao.envelope(retryKey)!!.json)
             val retriedTimeline = cloud.timeline("sample-allowed")
             assertEquals(2, retriedTimeline.getJSONArray("events").length())
-            assertEquals(3, dao.timeline("sample-allowed").size)
-            assertTrue(cloud.sync().contains("端末のみ）1"))
+            assertEquals(503, dao.eventCount("sample-allowed"))
+            assertTrue(cloud.sync().contains("端末のみ）501"))
             val rows = cloudSessions(auth)
             assertEquals(1, rows.length())
             assertEquals("sample-allowed", rows.getJSONObject(0).getString("session_id"))

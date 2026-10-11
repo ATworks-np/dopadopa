@@ -52,11 +52,19 @@ class CloudRepository(context: Context,
                 dao.envelope(key)?.let { saved ->
                     val rows = JSONObject(saved.json).getJSONArray("events")
                     val ids = (0 until rows.length()).map { rows.getJSONObject(it).getString("event_id") }.toSet()
-                    late += dao.timeline(session.sessionId, 501).count { it.eventId !in ids }
+                    late += maxOf(0, dao.eventCount(session.sessionId) - dao.eventsByIds(session.sessionId, ids.toList()).size)
                 }
                 continue
             }
-            val events = dao.timeline(session.sessionId, 501)
+            val existing = dao.envelope(key)
+            if (existing != null && existing.consentRevision != revision) { skipped++; continue }
+            val frozenRows = existing?.let { JSONObject(it.json).getJSONArray("events") }
+            val events = if (frozenRows == null) dao.timeline(session.sessionId, 501) else {
+                val ids = (0 until frozenRows.length()).map { frozenRows.getJSONObject(it).getString("event_id") }
+                if (ids.size !in 1..500) { skipped++; continue }
+                dao.eventsByIds(session.sessionId, ids)
+            }
+            if (frozenRows != null && events.size != frozenRows.length()) { skipped++; continue }
             if (!SyncPolicy.permits(session, events, consent, revision, true)) { skipped++; continue }
             if (queue.getLong("retry:$key", 0) > System.currentTimeMillis()) { pending++; continue }
             val candidate = JSONObject().put("session_id", session.sessionId).put("user_goal", goal.description)
@@ -65,7 +73,7 @@ class CloudRepository(context: Context,
             try {
                 val payload = synchronized(PrivacyGate.lock) {
                     require(authorized(user.uid, revision))
-                    require(candidate.toString().toByteArray(Charsets.UTF_8).size <= 300_000)
+                    require((existing?.json ?: candidate.toString()).toByteArray(Charsets.UTF_8).size <= 300_000)
                     dao.freezeEnvelope(SyncEnvelope(key, session.sessionId, revision, candidate.toString()))
                     val frozen = dao.envelope(key) ?: error("session expired before sync")
                     require(frozen.consentRevision == revision)

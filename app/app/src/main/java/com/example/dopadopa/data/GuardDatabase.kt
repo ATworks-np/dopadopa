@@ -68,6 +68,9 @@ interface GuardDao {
     fun sessionAt(appId: String, at: Long): Session?
     @Query("SELECT * FROM events WHERE sessionId = :sessionId ORDER BY timestamp, eventId LIMIT :limit")
     fun timeline(sessionId: String, limit: Int = 500): List<InteractionEvent>
+    @Query("SELECT * FROM events WHERE sessionId = :sessionId AND eventId IN (:ids) ORDER BY timestamp, eventId")
+    fun eventsByIds(sessionId: String, ids: List<String>): List<InteractionEvent>
+    @Query("SELECT COUNT(*) FROM events WHERE sessionId = :sessionId") fun eventCount(sessionId: String): Int
     @Query("SELECT * FROM goals ORDER BY confirmedAt DESC LIMIT 1") fun latestGoal(): UserGoal?
     @Query("SELECT * FROM consents ORDER BY createdAt DESC LIMIT 1") fun latestConsent(): ConsentRecord?
     @Query("UPDATE sessions SET endedAt = :at WHERE sessionId = :id AND endedAt IS NULL") fun endSession(id: String, at: Long)
