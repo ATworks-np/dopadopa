@@ -2,6 +2,7 @@
   "status": "passed",
   "data_origin": "sample",
   "resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656",
+  "started_at": "2026-10-11T07:39:25.317029+00:00",
   "goal_alignment": "aligned",
   "tools": [
     "get_click_events",

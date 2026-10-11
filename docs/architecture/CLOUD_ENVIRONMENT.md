@@ -1,5 +1,17 @@
 # Cloud environment
 
+## 現在の状態（2026-10-11）
+
+- project dopadopa、管理アカウントatomic1017@gmail.com。Firebase Auth/Firestore/Vertex/Cloud Runは構築・架空データ実検証済み。
+- Cloud Run公開トラフィックはdopaguard-api-00010-gth（ADK）へ100%戻した。Engine接続版00011-m59の公開API分析はfailed、原因切分け中。Androidの新経路検証は未実施、実機は待機。
+- Agent Engine8372512764677062656はログ対策更新済み。sample分析・本人認可・旧世代拒否を実検証済み。過去stderr漏出7件を記録、対策後の検証開始以降17件では原文/JWTパターンなし。ログ再監査証拠engine-log-audit-current.json、全将来応答の保証ではない。
+- APIビルド801c1ce3-b30f-47be-b4eb-b182a8c71388 SUCCESS。公開API・Android経路の受入確認は別途行う。
+- WebデモはMVP対象外。既存環境は参考成果として保持。
+
+## 構築履歴
+
+以下は当時の状態を残した時系列記録。現在の状態は上記とprocess/HANDOFF.mdを参照する。
+
 - 指定アカウント: atomic1017@gmail.com
 - 表示名: dopadopa
 - GCP project ID: dopadopa

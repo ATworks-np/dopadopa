@@ -1,6 +1,6 @@
 # Cloud API / Gemini runner
 
-DG-009〜011の初期実装。Firestore・Firebase Auth・Gemini実接続とCloud Runデプロイは未検証。
+Firebase Auth・Firestore・Vertex Geminiの実接続とCloud Run配置を検証済み。Android実機収集はユーザーの再開指示まで待機中。最新の証拠・未完了事項は [HANDOFF](../docs/process/HANDOFF.md) と [MVP受入表](../docs/process/MVP_ACCEPTANCE_STATUS.md) を参照。
 
 ## ローカル
 
@@ -23,16 +23,18 @@ API実行: `.venv/Scripts/python -m uvicorn server.app:app --port 8080 --no-acce
 - 本番StoreはFirestore。ユーザーIDは検証済みトークンから取得し、ユーザー別subcollectionで分離する。
 - Docker: プロジェクトルートをビルドコンテキストに `docker build -f server/Dockerfile .`。
 - HTTPリクエストは300KB、イベントは500件。セッションは閉じた後に送る。登録後の内容変更は409、同一再送は冪等。
-- 分析は同期実行、最大6反復/12Tool/45秒、モデルのHTTPタイムアウト10秒。例外はfailedと匿名化Tool traceに変換。
+- 現公開ADKの分析は同期実行、8モデル呼出/12Tool/45秒。legacy runnerは最大6反復。例外はfailedと機密を含まないTool traceに変換。
 - Toolは4つのread-onlyのみ。書込Toolは存在せず、訂正は認証済み本人操作のAPIから行う。
 - `DELETE /v1/user/data` は本人のデータのみ削除。処理失敗時は成功表示を返さない。
 
-## 未完了事項
+## 検証済み範囲と残作業
 
-- クラウドデプロイ、Firestore実接続、Gemini実応答の証拠取得。
-- Android同期・認証UI、同意撤回との競合対策、クラウド保持期間、リクエスト頻度制限。
-- Webデモ・サンプル登録導線。現時点で実データを公開する経路はない。
-- API testsはMemoryStore、Agent testsはFakeClient。Gemini実行の成功とは扱わない。
+- 公開Cloud Runはdopaguard-api-00010-gth（ADK）へ100%戻した。ADK経路の実認証・所有者分離・Gemini分析・本人訂正・削除は架空データで検証済み。Engine接続版00011-m59の公開API分析はfailed、原因切分け中。
+- Android同期・認証・分析/訂正UI、同意撤回、削除世代、固定再送、端末7日保持をエミュレータと架空クラウドデータで検証済み。実YouTube収集の証拠ではない。
+- Agent Engineの実sample分析と認可境界は検証済み。ログ問題を対策後、検証開始以降のruntime17件では原文/JWTパターンを検出せず。Cloud Run接続版は配置済みだが分析試験が失敗したためトラフィックを戻した。公開API/Androidの新経路受入は未完了。
+- サーバー48件PASS。API単体はMemoryStore、ADK単体は実Runner＋模擬モデル。実Vertex/Firestore/Engine検証の証拠はartifacts/cloud、Androidはartifacts/testsに分離する。
+- クラウドの内容保持期間・ユーザー別リクエスト頻度制限は未整備。Cloud Runのmax2/concurrency4はユーザー別レート制限ではない。
+- Webデモは既存参考成果で、ユーザー指示によりMVP対象外。実機E2E・提出物は未完了。
 
 ## ADK実行経路
 
@@ -40,7 +42,9 @@ API実行: `.venv/Scripts/python -m uvicorn server.app:app --port 8080 --no-acce
 認証済み所有者とセッションをToolに固定し、必須3Tool、12Tool呼出上限、8モデル呼出上限、45秒の全体期限を適用する。
 一時ADKセッションは終了時に破棄する。出力は既存の根拠・欠損・所有者Validatorを通す。
 Vertex経由では `GOOGLE_GENAI_USE_VERTEXAI=true` とproject/locationを設定する。
-Agent Engineへの配置は未実施。ローカルテストは実ADK Runnerに模擬モデルを渡したもので、実Geminiの応答ではない。
-`requirements.lock.txt` はADKとAgent Engine SDKを含む固定済み依存。pip checkとサーバー28件はPASS。
+Agent Engineはprojects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656。`tools.deploy_engine --update`で同じresourceを更新する。新規createを繰り返さない。
+`AGENT_BACKEND=engine`と`AGENT_ENGINE_RESOURCE`でremote callerを選ぶ。設定候補はcloudrun.engine.env.yaml。EngineはFirebase本人認可を再検証し、結果のID/origin/evidence/世代をCloud Runでも再検証する。
+telemetry無効だけでは例外時のruntime stderrに引数が記録されたため、queryを機密なしerror envelopeへ変更した。更新後のsample/拒否試験とログ再監査は通過した。過去の検出記録を残し、今後も機密非出力を検証する。
+`requirements.lock.txt` はADKとAgent Engine SDKを含む固定済み依存。ローカル試験と実クラウド試験は別の証拠として扱う。
 
 参照: [Google Gen AI SDK](https://github.com/googleapis/python-genai)、[Function calling](https://ai.google.dev/gemini-api/docs/function-calling)、[Firestore認証](https://docs.cloud.google.com/firestore/native/docs/authentication)。

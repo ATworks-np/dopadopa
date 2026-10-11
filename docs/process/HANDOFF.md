@@ -248,3 +248,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 ## DG-017 ログ対策配置・APIビルド進行中
 - 生存session60319は既存Engine更新LRO2127069153046036480、最後のpoll非終端。次は同じhandle確認→verify_engine→logs --since-smoke（伝播を待って再監査）。過去漏出7件の証拠は保持。
 - server48件PASS、例外出力空/error envelope確認。Cloud Build801c1ce3-b30f-47be-b4eb-b182a8c71388開始、現Cloud Run00010-gth adk維持。build成功とログ対策PASS後engine envでdeploy、API/Android架空QA。実機待機/Web対象外。
+
+## DG-017 ログ対策成功、Cloud Run接続失敗で戻した
+- Engine更新終了、sample分析/安全拒否/cleanup PASS。修正後ログ17entriesで原文/JWTなし。engine-log-audit-current.json、過去検出記録保持。
+- API Build801c1ce3 SUCCESS、00011-m59 deploy成功（session40728）。公開Engine経由分析はfailed/trace0、session34244終了/一時Auth2cleanuptrue。engine-cloudrun-failure.json。
+- update-traffic終了成功、現在00010-gth ADKが100%。Engine切替未完了。次はremote callerのサービス認証・transport・output検証失敗の安全診断、修正して再検証。実機待機/Web対象外。README/cloud environmentを現在状態と履歴に整備、docs4件/22tickets validate PASS。
