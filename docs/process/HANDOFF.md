@@ -303,3 +303,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - verify_cloud_apiに--scenario（learning-only/learning-shorts/unobservable）を追加し、非default結果はシナリオ別ファイルへ保存。unknown条件はstatus/goal_alignment/segments/transitionsを明示照合する。
 - unobservableの公開Engine検証session92761終端PASS。insufficient_data/unknown、区間・転換なし、分析11.037秒、必須3Tool、訂正/削除世代/2Authcleanuptrue。cloud-api-smoke-unobservable.json。
 - 実機/エミュレータ使用なし。実機E2Eと断続的transport timeout原因は残る。
+
+## DG-016 README・現在構成の整備
+- DG-015未完了のまま資料先行着手する理由をticketに明記し--forceでin-progressへ移動。新端末への引継ぎ要求に対応する作業で、実機/提出受入の完了ではない。
+- READMEとOVERVIEWを現行Engine構成へ更新。Firebase本人認可の再検証、結果/削除世代検証、Android根拠/訂正UI、Web対象外、タイムアウト未解決、実機再開条件を記載。
+- 新クラウド推論/配置/端末操作なし。提出動画/公式条件照合/実機E2Eは残る。

@@ -4,11 +4,10 @@
 
 合計 **22** 件 / P0 **17** 件
 
-## backlog (6)
+## backlog (5)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
-| [DG-016](backlog/DG-016.md) | P0 | M5 | 提出用README・説明資料・デモ動画の準備 | DG-015 | unassigned |
 | [DG-101](backlog/DG-101.md) | P1 | Future | コンテンツ表示時間（露出）の推定 | DG-006, DG-007 | unassigned |
 | [DG-102](backlog/DG-102.md) | P1 | Future | やさしい通知・続行確認UI | DG-011, DG-013 | unassigned |
 | [DG-103](backlog/DG-103.md) | P1 | Future | Policy Agentの改善提案（未適用） | DG-013 | unassigned |
@@ -19,7 +18,7 @@
 
 _該当なし_
 
-## in-progress (8)
+## in-progress (9)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
@@ -30,6 +29,7 @@ _該当なし_
 | [DG-012](in-progress/DG-012.md) | P0 | M4 | Android分析結果画面・根拠イベント閲覧 | DG-007, DG-011 | Codex |
 | [DG-013](in-progress/DG-013.md) | P0 | M4 | ユーザー確認・訂正とフィードバック保存 | DG-009, DG-012 | Codex |
 | [DG-015](in-progress/DG-015.md) | P0 | M5 | AC-01〜AC-06 E2E検証と未達管理 | DG-003, DG-005, DG-006, DG-007, DG-008, DG-011, DG-012, DG-013 | Codex |
+| [DG-016](in-progress/DG-016.md) | P0 | M5 | 提出用README・説明資料・デモ動画の準備 | DG-015 | Codex |
 | [DG-017](in-progress/DG-017.md) | P0 | M3 | Agent Engine追加配置と認可境界検証 | DG-009, DG-010, DG-011 | Codex |
 
 ## blocked (2)

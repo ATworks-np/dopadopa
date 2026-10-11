@@ -13,15 +13,16 @@ AndroidのYouTube操作を観測し、Geminiが根拠イベント付きの行動
 - Windows: `cd app` → `./gradlew.bat testDebugUnitTest assembleDebug assembleRelease`。
 - Debug APK: `app/app/build/outputs/apk/debug/app-debug.apk`。
 - Release APKは未署名。配布審査・実機収集の成功を意味しない。
-- USBデバッグを有効にした本人の端末に `adb install -r <APK>` でインストールする。
+- 以下の端末操作はユーザーが実機試験を再開した後のみ行う。現在はインストール・実機収集を保留する。
+- 再開後、USBデバッグを有効にした本人の端末に `adb install -r <APK>` でインストールする。
 - 起動画面で収集説明を確認し同意、その後OSのAccessibility設定からサービスを手動で有効化する。
 - YouTubeのホーム、検索結果（検索入力自体は対象外）、動画詳細、Shortsを操作し、取得状態を確認する。
 - 機密値を避けた公開動画で検証する。原文と画面の照合は本人が行う。
-- タイムラインはアプリ専用Room DB `guard.db`。Android同期コードは実装中。`data_origin=real`。
+- タイムラインはアプリ専用Room DB `guard.db`。同期・分析・訂正コードは実装済み、実機E2Eは未確認。実観測は`data_origin=real`、架空データは`sample`。
 - 初回に困りごとを選び、本人がゴールを確認する。端末内収集とクラウド同意は別々に選択する。
 - UsageStatsの開始・終了とAccessibilityクリックを統合。権限がなければ開始・終了は捏造しない。
 - プロセス消失などで終了が観測できなければ「終了未確定」。SCROLLは500ms単位で重複抑止。
-- 保持期間は7日。収集処理時に期限切れデータを削除する。
+- 端末の保持期間は7日。収集・同期の保守処理で期限切れデータと孤立キューを削除する。クラウド内容の保持期限は未整備。
 - 「収集とクラウド同意を撤回」で新規取得を停止。「端末内データをすべて削除」で観測・分析・訂正・ゴール・同意を削除。
 - 旧スパイクのJSONLは正式DBに移行・送信しない。削除操作で旧ファイルも削除する。
 - 親ノードの文言抽出は実機照合前のため無効。欠損を推測で埋めない。
@@ -45,3 +46,13 @@ AndroidのYouTube操作を観測し、Geminiが根拠イベント付きの行動
 - ログアウト/撤回は新規送信を停止し実行中通信のキャンセルを試みる。すでに届いたデータはクラウド削除ボタンで削除する。削除失敗時は完了と表示しない。
 - ローカルデータの所有者は最初の同期アカウントに固定。別アカウントに無断で送信しない。
 - CloudSyncIntegrationTestで実Android認証/sample同期/未同意拒否/撤回/削除を検証済み。実YouTube収集の成功ではない。証拠artifacts/tests/android-cloud-sync.xml。
+
+## 現在の分析構成と制約
+
+Android → Firebase本人認証付きCloud Run → Agent Engine上のADK → Vertex Geminiの構成。Toolは本人のFirestoreデータを読み、分析は観測・根拠に対する仮説として表示する。本人の明示回答だけを訂正APIへ保存し、元の観測は書き換えない。[アーキテクチャ](docs/architecture/OVERVIEW.md) を参照。
+
+- projectはdopadopa、公開APIはhttps://dopaguard-api-463106527119.asia-northeast1.run.app。
+- 公開Engine経路の架空分析・観測不足unknown・認可・訂正・削除は検証済み。証拠はartifacts/cloud/cloud-api-smoke.jsonとcloud-api-smoke-unobservable.json。
+- 最後のAndroid/Engine連携試験はタイムアウトで失敗。Android待機上限を65秒へ修正し単体18件/APKビルド成功、端末上の解消確認は未実施。Engine transportの断続的失敗原因も未特定。
+- 実YouTube文言取得、実機E2E、提出動画・提出条件確認は未完了。MVP完成や後悔・依存の判定成功は主張しない。
+- 最新受入判定は [MVP受入状況](docs/process/MVP_ACCEPTANCE_STATUS.md)、別端末でのセットアップは [再開資料](docs/process/RESUME_ON_ANOTHER_MACHINE.md)。
