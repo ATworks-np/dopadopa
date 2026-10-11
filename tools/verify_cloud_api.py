@@ -2,6 +2,8 @@
 import json
 import argparse
 import secrets
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 import requests
 
@@ -13,7 +15,7 @@ def main():
     args = parser.parse_args()
     base = "https://engine-qa---dopaguard-api-p4kp2phc5q-an.a.run.app" if args.engine_qa else BASE
     key = json.loads(Path("artifacts/cloud/firebase-web-config.json").read_text(encoding="utf-8"))["apiKey"]
-    tokens, checks = [], []
+    tokens, checks, timings = [], [], []
     def identity(method, body):
         response = requests.post("https://identitytoolkit.googleapis.com/v1/accounts:" + method,
             params={"key": key}, json=body, timeout=30)
@@ -22,11 +24,27 @@ def main():
     def api(method, path, token=None, body=None, expected=200, generation=None):
         headers = {"Authorization": "Bearer " + token} if token else {}
         if generation is not None: headers['X-DopaGuard-Generation'] = str(generation)
-        response = requests.request(method, base + path,
-            headers=headers, json=body, timeout=65)
+        # Store route shape and duration only, never IDs, tokens or bodies.
+        route = path
+        if path.startswith("/v1/sessions/"): route = "/v1/sessions/{id}"
+        if path.startswith("/v1/analyses/"):
+            route = "/v1/analyses/{id}" + ("/feedback" if path.endswith("/feedback") else "")
+        started = time.monotonic()
+        timing = {"method": method, "route": route}
+        try:
+            response = requests.request(method, base + path,
+                headers=headers, json=body, timeout=65)
+            timing["http_status"] = response.status_code
+        except requests.RequestException as error:
+            timing["error_type"] = type(error).__name__
+            raise
+        finally:
+            timing["elapsed_ms"] = round((time.monotonic() - started) * 1000)
+            timings.append(timing)
         if response.status_code != expected: raise RuntimeError(f"API {path}: HTTP {response.status_code}, expected {expected}")
         return response.json()
-    result = {"project": "dopadopa", "data_origin": "sample", "checks": checks}
+    result = {"project": "dopadopa", "data_origin": "sample", "checks": checks,
+        "started_at": datetime.now(timezone.utc).isoformat(), "request_timings": timings}
     try:
         for _ in range(2):
             account = identity("signUp", {"email": "smoke-" + secrets.token_hex(12) + "@example.invalid",
@@ -52,7 +70,7 @@ def main():
         assert analysis["result"]["user_confirmation_required"] is True
         aid = analysis["analysis_id"]
         api("GET", "/v1/analyses/" + aid, tokens[1], expected=404)
-        checks.append("Cloud Run ADK/Vertex analysis and other owner rejection")
+        checks.append("Cloud Run analysis and other owner rejection")
         saved = api("POST", "/v1/analyses/" + aid + "/feedback", tokens[0],
             {"verdict": "incorrect", "corrected_intent": "架空サンプルの訂正検証"})
         rows = api("GET", "/v1/analyses/" + aid + "/feedback", tokens[0])

@@ -82,7 +82,7 @@ gcloud run services describe dopaguard-api --project=dopadopa --region=asia-nort
 ## 次の作業
 
 1. 新端末でGit・クラウド状態と上記ローカル検証を確認する。
-2. DG-017でEngine transportの遅延を切り分ける。現行tools.verify_cloud_apiにはリクエスト別時間計測がなく、これを機密なしで記録する改善が候補。直前の調査はファイル読取のみで、未コミットのコード修正はない。
+2. DG-017でEngine transportの遅延を切り分ける。tools.verify_cloud_apiは開始時刻とリクエスト別時間/HTTP状態を記録する。IDをrouteの{id}へ置換し、本文・トークンは保存しない。artifacts/cloud/cloud-api-smoke.jsonのrequest_timingsを使って、Cloud Loggingの固定failure_stageと照合する。
 3. モデル45秒制限、認可・世代境界・同意キャンセルを維持する。推測でcold startを原因と断定しない。
 4. 実機/エミュレータを使わず、Android中心の再現手順と提出説明を整備できる。DG-015/016は依存・未達を明記する。
 5. 実機テストはユーザーの再開指示後のみ。MVP完成扱いはAC-01〜06の証拠が揃ってから。

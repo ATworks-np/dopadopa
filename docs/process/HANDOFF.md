@@ -288,3 +288,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - Cloud Run60秒より短かったAndroid分析read55秒を65秒へ変更。55.545秒のサーバー応答より先に端末が打切る不整合を修正。connect10秒/通常要求15秒/同意撤回キャンセルは維持。
 - 端末なしtestDebugUnitTest/assembleDebug SUCCESS。集計証拠android-analysis-timeout-build.json。実機保留・エミュレータ不使用を遵守。
 - Engine transport55秒タイムアウトの具体原因は未特定。この待機変更で遠隔分析成功や端末上の解消確認をしたとは扱わない。DG-017未完了、モデル45秒制限は維持。
+
+## DG-017 時間計測付きクラウド検証
+- tools.verify_cloud_apiにstarted_atとAPI別elapsed_ms/HTTP状態を追加。route内IDは{id}へ置換、本文/tokenを保存しない。例外時も型と経過時間のみ記録。
+- session86955終端PASS。分析API13.373秒、認可/訂正/削除世代/cleanuptrue。cloud-api-smoke.json更新。断続的タイムアウト原因は未特定で、短い成功1回を解消証拠にしない。
+- 別端末用資料を時間計測の利用手順に更新。実機保留/エミュレータ不使用/Web対象外維持。生存検証handleなし。
