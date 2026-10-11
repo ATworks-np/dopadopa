@@ -13,6 +13,19 @@ from server.adk_agent import AdkBehaviorRunner
 class DopaGuardEngineAgent:
     def query(self, firebase_token: str, session_id: str, analysis_id: str,
               expected_generation: int) -> dict:
+        # Managed runtime prints failing call arguments to stderr. Never let a
+        # business/auth/model exception escape with a Firebase token in kwargs.
+        try:
+            return self._investigate(firebase_token, session_id, analysis_id, expected_generation)
+        except ConflictError:
+            return {"error": "generation_conflict"}
+        except KeyError:
+            return {"error": "record_unavailable"}
+        except Exception:
+            return {"error": "analysis_unavailable"}
+
+    def _investigate(self, firebase_token: str, session_id: str, analysis_id: str,
+                     expected_generation: int) -> dict:
         if os.environ.get("DOPAGUARD_PROJECT"):
             os.environ["GOOGLE_CLOUD_PROJECT"] = os.environ["DOPAGUARD_PROJECT"]
             os.environ["GOOGLE_CLOUD_LOCATION"] = os.environ.get("DOPAGUARD_MODEL_LOCATION", "global")

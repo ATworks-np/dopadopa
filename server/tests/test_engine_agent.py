@@ -36,14 +36,12 @@ class EngineBoundaryTest(unittest.TestCase):
              patch("server.engine_agent.authenticated_user", return_value="verified-owner"), \
              patch("server.engine_agent.FirestoreStore", return_value=store), \
              patch("server.engine_agent.AdkBehaviorRunner") as runner:
-            with self.assertRaises(ConflictError):
-                DopaGuardEngineAgent().query("fictional-token", "s", "a", 7)
+            self.assertEqual({"error": "generation_conflict"}, DopaGuardEngineAgent().query("fictional-token", "s", "a", 7))
             runner.assert_not_called()
             store.db.close.assert_called_once()
 
     def test_invalid_arguments_rejected_before_authentication(self):
         with patch("server.engine_agent.authenticated_user") as auth:
             for sid, generation in [("../other", 0), ("s", -1), ("s", True), ("s", 0.5), ("s", float("nan")), ("s", 2**53)]:
-                with self.assertRaises(ValueError):
-                    DopaGuardEngineAgent().query("fictional-token", sid, "a", generation)
+                self.assertEqual({"error": "analysis_unavailable"}, DopaGuardEngineAgent().query("fictional-token", sid, "a", generation))
             auth.assert_not_called()

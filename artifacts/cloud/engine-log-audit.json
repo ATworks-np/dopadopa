@@ -1,0 +1,14 @@
+{
+  "resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656",
+  "entries_checked": 2805,
+  "pagination_complete": true,
+  "telemetry_disabled": true,
+  "content_capture_not_enabled": true,
+  "sample_content_found": true,
+  "jwt_pattern_found": true,
+  "scope": "all available runtime entries for this Engine; future output not guaranteed",
+  "finding_counts_by_log_and_severity": {
+    "aiplatform.googleapis.com%2Freasoning_engine_stderr:DEFAULT": 7
+  },
+  "status": "inconclusive_or_failed"
+}

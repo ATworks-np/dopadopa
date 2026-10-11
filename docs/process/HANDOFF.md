@@ -239,3 +239,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 ## DG-017 実Engine分析PASS
 - 更新session52982終了成功、LROdone。verify_engine session88963 PASS、架空learning-only aligned/必須3Tool/evidence valid、invalid token/別owner/旧世代拒否、2一時Authと内容cleanuptrue。engine-smoke.json。
 - 次はEngineログ/traceでtoken・原文非出力を確認し、Cloud Run engine環境設定でbuild/deploy→公開APIとAndroid架空QA。現公開00010-gth adkのまま、remoteコードはローカルに接続済み。実機待機/Web対象外。
+
+## DG-017 ログ監査未達・対策未配置
+- Engine runtime stderr7件にsample内容/JWTパターン。全2805entriesチェック、telemetry falseでも例外経路が漏出。値は出力/ファイル保存せずカウントだけ。engine-log-audit.json。旧テストAuth削除済み。
+- query例外を機密なしerror envelopeへ変換する修正、入口3件PASS。未Engine更新。次はverify_engineの拒否判定をerror envelopeへ変更、更新後の時刻限定ログ監査。過去ログの削除なし、Cloud Run adk維持。
+- 実機待機/Web対象外。
