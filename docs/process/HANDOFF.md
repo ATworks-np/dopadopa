@@ -205,3 +205,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - DG-015をforce in-progress。依存は実機待機で未完了、既存証拠確認とprocess/MVP_ACCEPTANCE_STATUS.md作成のみ先行。
 - AC別に証拠範囲/残確認を記載、実機再開後の手順を明文化。実機待機/Web対象外を維持。保存済みGemini根拠監査PASS、新規推論/実ログなし。
 - 次はAgent Engine追加配置の境界/公式SDK確認、Android中心の提出手順。DG-015は実機E2E未実施でdoneにしない。
+
+## DG-017 Agent Engine入口
+- Agent Engine追加配置をDG-017で管理。server/engine_agent.py query入口: runtime Firebase本人認可、client UIDなし、前後削除世代チェック、既存ADK、Firestore client finally close。入口試験3件追加/server44件PASS。
+- 現公開Cloud Run00010-gthはadkのまま、Engine未配置。次はpackage/専用IAM/tokenや原文のログ・tracing非出力設定を確認し配置、Cloud Run remote adapterと実QAを行う。
+- 実機待機/Web対象外維持。実ログ/新推論なし。

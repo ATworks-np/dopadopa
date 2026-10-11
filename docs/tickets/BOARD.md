@@ -2,7 +2,7 @@
 
 > このファイルは `python docs/scripts/tickets.py board` で自動生成。直接編集しない。
 
-合計 **21** 件 / P0 **16** 件
+合計 **22** 件 / P0 **17** 件
 
 ## backlog (6)
 
@@ -19,7 +19,7 @@
 
 _該当なし_
 
-## in-progress (7)
+## in-progress (8)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
@@ -30,6 +30,7 @@ _該当なし_
 | [DG-012](in-progress/DG-012.md) | P0 | M4 | Android分析結果画面・根拠イベント閲覧 | DG-007, DG-011 | Codex |
 | [DG-013](in-progress/DG-013.md) | P0 | M4 | ユーザー確認・訂正とフィードバック保存 | DG-009, DG-012 | Codex |
 | [DG-015](in-progress/DG-015.md) | P0 | M5 | AC-01〜AC-06 E2E検証と未達管理 | DG-003, DG-005, DG-006, DG-007, DG-008, DG-011, DG-012, DG-013 | Codex |
+| [DG-017](in-progress/DG-017.md) | P0 | M3 | Agent Engine追加配置と認可境界検証 | DG-009, DG-010, DG-011 | Codex |
 
 ## blocked (2)
 
