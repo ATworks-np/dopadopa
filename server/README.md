@@ -31,7 +31,7 @@ API実行: `.venv/Scripts/python -m uvicorn server.app:app --port 8080 --no-acce
 
 - 公開Cloud Runはdopaguard-api-00013-hex（Engine接続）へ100%切替済み。公開APIの実認証・所有者分離・Gemini分析・本人訂正・削除・世代境界は架空データでPASS。旧00011-m59の失敗原因は未特定。
 - Android同期・認証・分析/訂正UI、同意撤回、削除世代、固定再送、端末7日保持をエミュレータと架空クラウドデータで検証済み。実YouTube収集の証拠ではない。
-- Agent Engineの実sample分析と認可境界は検証済み。ログ問題を対策後、最新検証開始以降のruntime132件では3架空シナリオの原文/JWTパターンを検出せず。公開APIの新経路はPASS、Androidエミュレータ連携試験は進行中。
+- Agent Engineの実sample分析と認可境界は検証済み。ログ問題を対策後、最新検証開始以降のruntime132件では3架空シナリオの原文/JWTパターンを検出せず。公開APIの新経路はPASS、最後のAndroid連携試験はengine_transport/read timeoutで失敗。クラウドAPI単独再検証はPASS。今後エミュレータはユーザー指示により使用しない。
 - サーバー48件PASS。API単体はMemoryStore、ADK単体は実Runner＋模擬モデル。実Vertex/Firestore/Engine検証の証拠はartifacts/cloud、Androidはartifacts/testsに分離する。
 - クラウドの内容保持期間・ユーザー別リクエスト頻度制限は未整備。Cloud Runのmax2/concurrency4はユーザー別レート制限ではない。
 - Webデモは既存参考成果で、ユーザー指示によりMVP対象外。実機E2E・提出物は未完了。

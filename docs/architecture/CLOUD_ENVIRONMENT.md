@@ -3,9 +3,9 @@
 ## 現在の状態（2026-10-11）
 
 - project dopadopa、管理アカウントatomic1017@gmail.com。Firebase Auth/Firestore/Vertex/Cloud Runは構築・架空データ実検証済み。
-- Cloud Run公開トラフィックはdopaguard-api-00013-hex（Engine接続）へ100%切替済み。公開API分析/認可/訂正/削除世代PASS。旧00011失敗原因は未特定。Androidエミュレータ新経路試験進行中、実機は待機。
+- Cloud Run公開トラフィックはdopaguard-api-00013-hex（Engine接続）へ100%切替済み。公開API分析/認可/訂正/削除世代PASS。旧00011失敗原因は未特定。最後のAndroid新経路試験は分析タイムアウトで失敗、クラウド単独再検証PASS。今後エミュレータ不使用、実機は待機。
 - Agent Engine8372512764677062656はログ対策更新済み。sample分析・本人認可・旧世代拒否を実検証済み。過去stderr漏出7件を記録、最新検証開始以降132件では原文/JWTパターンなし。ログ再監査証拠engine-log-audit-current.json、全将来応答の保証ではない。
-- APIビルド5c63bde4-a85d-4efd-9a71-53c1cd52580e SUCCESS。QAタグと通常公開URLでAPI受入PASS。Android経路は確認中。
+- APIビルド5c63bde4-a85d-4efd-9a71-53c1cd52580e SUCCESS。QAタグと通常公開URLでAPI受入PASS。Android経路はタイムアウト失敗、端末連携未確認。
 - WebデモはMVP対象外。既存環境は参考成果として保持。
 
 ## 構築履歴

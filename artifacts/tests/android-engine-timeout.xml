@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.example.dopadopa.CloudSyncIntegrationTest" tests="1" failures="1" errors="0" skipped="0" time="63.897" timestamp="2026-10-11T08:19:00" hostname="localhost">
+  <properties>
+    <property name="device" value="Pixel_Tablet(AVD) - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="consentedSampleSyncRevokeAndDeleteAgainstRealCloud" classname="com.example.dopadopa.CloudSyncIntegrationTest" time="63.182">
+    <failure>java.net.SocketTimeoutException: timeout
+at com.android.okhttp.okio.Okio$3.newTimeoutException(Okio.java:214)
+at com.android.okhttp.okio.AsyncTimeout.exit(AsyncTimeout.java:263)
+at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:217)
+at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+at com.example.dopadopa.cloud.CloudRepository.requestText(CloudRepository.kt:179)
+at com.example.dopadopa.cloud.CloudRepository.request(CloudRepository.kt:149)
+at com.example.dopadopa.cloud.CloudRepository.request$default(CloudRepository.kt:148)
+at com.example.dopadopa.cloud.CloudRepository.analyze(CloudRepository.kt:121)
+at com.example.dopadopa.CloudSyncIntegrationTest.consentedSampleSyncRevokeAndDeleteAgainstRealCloud(CloudSyncIntegrationTest.kt:84)
+... 31 trimmed
+Caused by: java.net.SocketException: Socket closed
+at java.net.SocketInputStream.read(SocketInputStream.java:188)
+at java.net.SocketInputStream.read(SocketInputStream.java:143)
+at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:983)
+at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:947)
+at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:862)
+at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:835)
+at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+... 49 more
+</failure>
+  </testcase>
+</testsuite>

@@ -276,3 +276,10 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - 公開URLのverify_cloud_api PASS。Engine経由分析completed/必須3Tool、本人認証/別owner拒否、訂正、削除、旧世代拒否、現世代同期、一時Auth2cleanuptrue。cloud-api-smoke.json更新。
 - Androidエミュレータ限定cloudIntegration試験開始。初回JDK指定パス不在で起動前終了、実在するユーザー配下Android Studio jbrへ訂正し再実行。実機テストは行わない。
 - 再実行session8119は生存、Pixel_Tablet Android15で1件開始/0 skipped/0 failed、まだ0/1完了。次は同じsessionをpollし終端とXMLを確認する。再起動しない。
+
+## DG-017 Android失敗・エミュレータ使用終了
+- session8119終端exit1。Android試験1件/1failure/0skip、CloudRepository.analyzeのread timeout。android-engine-timeout.xmlへ保存。cleanupの追加例外はXMLにないが個別クラウド残存照合は未実施。
+- Cloud Runの内容を含まない固定診断はanalysis_failure stage=engine_transport。POST応答409/55.545秒を確認。Android待機55秒、Engine transport読取55秒であり、Androidだけの問題と断定しない。Engine側遅延の具体原因は未特定。
+- ユーザーの新指示により今後エミュレータを使わない。実機保留/Web対象外も維持。端末連携未確認として管理する。
+- 公開API初回成功証拠をengine-public-api-first-pass.jsonに保持。端末を使わないverify_cloud_api再検証session85966開始、生存/未終端。次は同じsessionをpoll、再起動しない。
+- その後session85966終端exit0 PASS。Engine公開分析completed/3Tool、認可/訂正/削除世代、2一時Authcleanuptrue。cloud-api-smoke.json更新。Androidでの失敗は解消確認しておらず、原因調査は残る。稼働中のテストhandleなし。

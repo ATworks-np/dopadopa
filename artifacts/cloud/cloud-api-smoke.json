@@ -13,19 +13,19 @@
   "analysis_status": "completed",
   "trace": [
     {
+      "count": 1,
       "tool": "get_user_goals",
-      "elapsed_ms": 36,
-      "count": 1
+      "elapsed_ms": 28
     },
     {
+      "elapsed_ms": 21,
       "tool": "get_timeline",
-      "count": 2,
-      "elapsed_ms": 43
+      "count": 2
     },
     {
-      "tool": "get_click_events",
-      "elapsed_ms": 62,
-      "count": 2
+      "count": 2,
+      "elapsed_ms": 28,
+      "tool": "get_click_events"
     }
   ],
   "status": "passed",
