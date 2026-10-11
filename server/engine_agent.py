@@ -8,7 +8,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from server.auth import authenticated_user
 from server.store import FirestoreStore, ConflictError
-from server.adk_agent import AdkBehaviorRunner
+from server.adk_agent import AdkBehaviorRunner, InvestigationFailure
 
 class DopaGuardEngineAgent:
     def query(self, firebase_token: str, session_id: str, analysis_id: str,
@@ -21,6 +21,8 @@ class DopaGuardEngineAgent:
             return {"error": "generation_conflict"}
         except KeyError:
             return {"error": "record_unavailable"}
+        except InvestigationFailure as error:
+            return {"error": "analysis_unavailable", "stage": error.stage}
         except Exception:
             return {"error": "analysis_unavailable"}
 
@@ -46,8 +48,15 @@ class DopaGuardEngineAgent:
                 raise ConflictError("data changed before investigation")
             # Managed query handlers may already run on an asyncio event loop.
             # Give the synchronous runner its own loop without retaining state.
+            runner = AdkBehaviorRunner(store)
             with ThreadPoolExecutor(max_workers=1) as worker:
-                result, trace = worker.submit(AdkBehaviorRunner(store).run, uid, session_id, analysis_id).result(timeout=50)
+                try:
+                    result, trace = worker.submit(runner.run, uid, session_id, analysis_id).result(timeout=50)
+                except Exception:
+                    stage = getattr(runner, "failure_stage", None)
+                    if isinstance(stage, str) and stage in {"model_execution", "model_deadline", "result_validation"}:
+                        raise InvestigationFailure(stage) from None
+                    raise
             if store.generation(uid) != expected_generation:
                 raise ConflictError("data changed during investigation")
             return {"result": result.model_dump(mode="json"), "trace": trace}

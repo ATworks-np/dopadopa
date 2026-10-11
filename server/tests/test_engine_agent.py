@@ -6,8 +6,17 @@ from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 from server.engine_agent import DopaGuardEngineAgent
 from server.store import ConflictError
+from server.adk_agent import InvestigationFailure
 
 class EngineBoundaryTest(unittest.TestCase):
+    def test_fixed_diagnostic_envelope_contains_no_provider_message(self):
+        for stage in ("model_execution", "model_deadline", "result_validation", "fictional-sensitive-body"):
+            failure = InvestigationFailure(stage)
+            with patch.object(DopaGuardEngineAgent, "_investigate", side_effect=failure):
+                output = DopaGuardEngineAgent().query("fictional-token", "s", "a", 0)
+            self.assertEqual("analysis_unavailable", output["error"])
+            self.assertIn(output["stage"], {"model_execution", "model_deadline", "result_validation"})
+            self.assertNotIn("fictional", str(output))
     def test_provider_error_returns_generic_envelope_without_printing_content(self):
         stream = io.StringIO()
         with patch.object(DopaGuardEngineAgent, "_investigate", side_effect=RuntimeError("fictional-sensitive-body")), \

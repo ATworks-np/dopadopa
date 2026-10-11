@@ -9,6 +9,12 @@ from uuid import uuid4
 from server.agent import PROMPT, ToolGateway
 from server.models import Analysis, Event
 
+class InvestigationFailure(RuntimeError):
+    """Fixed diagnostic category; never retain provider messages or payloads."""
+    def __init__(self, stage):
+        self.stage = stage if stage in {"model_execution", "model_deadline", "result_validation"} else "model_execution"
+        super().__init__(self.stage)
+
 class ProviderAnalysis(Analysis):
     # Vertex schema conversion does not support a boolean Literal enum.
     # The authoritative Analysis validator below still requires True.
@@ -97,12 +103,14 @@ class AdkBehaviorRunner:
         invocation_id = str(uuid4())
         await sessions.create_session(app_name="dopaguard", user_id=uid, session_id=invocation_id)
         runner = Runner(app_name="dopaguard", agent=agent, session_service=sessions)
+        self.failure_stage = "model_execution"
         try:
             async with asyncio.timeout(self.timeout_seconds):
                 async for _ in runner.run_async(user_id=uid, session_id=invocation_id,
                     new_message=types.Content(role="user", parts=[types.Part.from_text(text=f"認可済みsession_id={session_id}を調査してください。")]),
                     run_config=RunConfig(max_llm_calls=8)):
                     pass
+            self.failure_stage = "result_validation"
             if self.store.generation(uid) != generation: raise PermissionError("data deleted during investigation")
             state = await sessions.get_session(app_name="dopaguard", user_id=uid, session_id=invocation_id)
             raw = state.state.get("analysis")
@@ -112,6 +120,9 @@ class AdkBehaviorRunner:
                 raise ValueError("model identity mismatch")
             result.validate_evidence(events)
             return result, gateway.trace
+        except TimeoutError:
+            self.failure_stage = "model_deadline"
+            raise
         finally:
             await sessions.delete_session(app_name="dopaguard", user_id=uid, session_id=invocation_id)
             await runner.close()

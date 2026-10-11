@@ -39,7 +39,11 @@ class RemoteEngineRunner:
                 if len(content) > 300_000: raise ValueError("engine response too large")
         self.failure_stage = "engine_output"
         output = json.loads(content)["output"]
-        if "error" in output: raise RuntimeError("engine analysis unavailable")
+        if "error" in output:
+            stage = output.get("stage")
+            if isinstance(stage, str) and stage in {"model_execution", "model_deadline", "result_validation"}:
+                self.failure_stage = "engine_" + stage
+            raise RuntimeError("engine analysis unavailable")
         self.failure_stage = "result_validation"
         result = Analysis.model_validate(output["result"])
         if result.session_id != session_id or result.analysis_id != analysis_id or result.data_origin != session["events"][0]["data_origin"]:

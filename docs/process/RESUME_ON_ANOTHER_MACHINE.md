@@ -78,6 +78,7 @@ gcloud run services describe dopaguard-api --project=dopadopa --region=asia-nort
 - Android分析read timeoutを55→65秒へ変更しCloud Run60秒より短い不整合を修正。単体18件/APKビルド成功、android-analysis-timeout-build.json。端末上の解消は未確認。
 - Engine transport55秒タイムアウトの原因は未特定。クラウド単独再検証は成功したが、断続的な失敗が解消した証拠はない。
 - 最新のlearning-shorts公開検証は35.173秒でstatus failed/trace空、固定診断engine_output。cloud-api-smoke-learning-shorts.json。transportとは別の内部失敗分類を調査する必要がある。2一時Authcleanuptrue。
+- 内部失敗分類（model_execution/model_deadline/result_validation）のローカルコードを追加済み、サーバー49件PASS。Engine/Cloud Runには未反映。次は同じEngineの--updateとCloud Run QA診断版配置から続ける。
 - 実YouTube文言取得、実機E2E、提出動画・提出条件確認は未完了。sample成功で実機ACを完了にしない。
 - クラウド内容保持期間/ユーザー別レート制限は未整備。Cloud Run max2はユーザー別制限ではない。
 

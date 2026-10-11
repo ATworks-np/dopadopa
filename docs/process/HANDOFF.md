@@ -318,3 +318,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - session38450終端exit1。learning-shortsの公開分析HTTP200だがstatus failed/trace空、35.173秒、2Authcleanuptrue。cloud-api-smoke-learning-shorts.json。追加根拠照合より前に失敗。
 - 同時刻のCloud Run固定診断はengine_output。以前のengine_transportとは異なる段階で、原因は未特定。次はEngineの機密なしerror envelope分類/内部失敗段階を切り分ける。学習/unknownの成功を全3ケース安定成功と扱わない。
 - 実機保留/エミュレータ不使用/Web対象外維持。生存試験handleなし。
+
+## DG-017 Engine内部診断のローカル実装
+- ADKに固定failure_stage（model_execution/model_deadline/result_validation）を記録し、Engine境界で機密なしerror envelopeへ変換。Cloud Runは3値だけ許可し、engine_接頭辞の固定分類をログへ出す。例外本文/原文/tokenなし。
+- 初回は例外型変更で既存試験7件が失敗したため、ADKの元の例外動作を維持しEngine境界だけ変換する形へ修正。サーバー49件PASS。
+- クラウド未反映。次は既存Engine --updateとCloud Run QA診断版のbuild/deploy、learning-shortsの内部段階確認。新Engine createしない。今回新推論/端末使用なし。
