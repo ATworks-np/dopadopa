@@ -54,7 +54,7 @@ python docs/scripts/tickets.py validate
 - Gate 0: 実機でクリック/テキストが取れるか確認（DG-001）。失敗時は実機証拠とfallbackを残す。
 - Gate 1: サンプルデータからGemini Tool Callingとevidence_idsが安定する（DG-010, DG-011）。
 - Gate 2: Android実機セッション→Gemini解析→訂正がE2Eでつながる（DG-015）。
-- Gate 3: Cloud Runデモで実ログとサンプルを明示し、ACを点検して提出する（DG-014, DG-016）。
+- Gate 3: Androidの再現手順と実機/サンプルの区別、AC-01〜06の証拠を点検して提出する（DG-015, DG-016）。WebデモはMVP対象外（2026-10-11ユーザー指示）。
 
 ## 変更管理
 

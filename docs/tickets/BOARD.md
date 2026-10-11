@@ -8,8 +8,8 @@
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
-| [DG-015](backlog/DG-015.md) | P0 | M5 | AC-01〜AC-07 E2E検証と未達管理 | DG-003, DG-005, DG-006, DG-007, DG-008, DG-011, DG-012, DG-013, DG-014 | unassigned |
-| [DG-016](backlog/DG-016.md) | P0 | M5 | 提出用README・説明資料・デモ動画の準備 | DG-014, DG-015 | unassigned |
+| [DG-015](backlog/DG-015.md) | P0 | M5 | AC-01〜AC-06 E2E検証と未達管理 | DG-003, DG-005, DG-006, DG-007, DG-008, DG-011, DG-012, DG-013 | unassigned |
+| [DG-016](backlog/DG-016.md) | P0 | M5 | 提出用README・説明資料・デモ動画の準備 | DG-015 | unassigned |
 | [DG-101](backlog/DG-101.md) | P1 | Future | コンテンツ表示時間（露出）の推定 | DG-006, DG-007 | unassigned |
 | [DG-102](backlog/DG-102.md) | P1 | Future | やさしい通知・続行確認UI | DG-011, DG-013 | unassigned |
 | [DG-103](backlog/DG-103.md) | P1 | Future | Policy Agentの改善提案（未適用） | DG-013 | unassigned |

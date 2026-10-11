@@ -60,7 +60,7 @@ python -m unittest discover -s docs/scripts -p 'test_*.py'
 2. **DG-002 + DG-003**：データ契約・ローカルDB・収集対象と同意の境界を定める。
 3. **DG-005〜008**：YouTubeのセッション収集、UIイベント取得、タイムライン化。
 4. **DG-009〜012**：Cloud Run、Tool Calling、Gemini分析出力、訂正記録。
-5. **DG-013〜015**：Android結果UI・Webデモ・E2E確認と提出素材。
+5. **DG-013、DG-015、DG-016**：Android結果UI・本人訂正・E2E確認と提出素材。Webデモ（DG-014 / FR-09 / AC-07）は2026-10-11ユーザー指示によりMVP対象外。既存成果は参考として保持。
 
 並列着手可否は各チケットの `depends_on` を参照。各タスクの作業終了時にエビデンスを記録し、状態を更新すること。
 

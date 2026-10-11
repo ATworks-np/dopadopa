@@ -168,3 +168,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - sessions FK cascadeで7日expire/削除連動、deleteAll/deleteCloudで固定データ消去。DB v3 migration2→3、既存1→2も保持。schema3.json生成。
 - session52001: 単体18件/assemble/移行1件PASS。session27586: 移行1件+固定/owner key/expire/delete試験2件PASS、android-sync-envelope.xml。架空DB fixtureのみ。
 - 次はCloudSyncIntegrationTestで固定再送・遅延観測追加・クラウド削除の実QA。Cloud Run00009-jd9、今回変更はAndroidのみで新API不要。DG-008 in-progress。Agent Engine/実機E2E/提出物も未達。
+
+## 2026-10-11 MVPスコープ変更
+- ユーザー指示でWebデモをMVPから除外。FR-09/AC-07/DG-014は参考成果。既存コード/公開環境は保持。
+- TRACEABILITY、DoD、実行計画、品質Gate、DG-015/016依存・受入、READMEを更新。Android→Gemini→根拠→訂正とAC-01〜06を完成条件として維持。
+- 実ログなし。残作業は同期追加検証、実機収集/E2E、Agent Engine配置、Android中心の提出素材。
