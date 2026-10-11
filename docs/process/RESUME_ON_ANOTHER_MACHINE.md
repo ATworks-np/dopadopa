@@ -2,6 +2,17 @@
 
 最初にこの資料を読み、次に [受入状況](MVP_ACCEPTANCE_STATUS.md)、[最新の対応履歴](HANDOFF.md) の末尾、[DG-017](../tickets/in-progress/DG-017.md) を確認する。過去履歴の「進行中」より後の終了記録を優先する。MVP全体は未完成。
 
+## 引き継ぎ確定時の最優先事項
+
+ユーザーの最終指示は「引き継ぎがゴール」。旧端末での追加開発・新配置・新テストは終了する。次端末ではユーザーの作業再開指示に従う。
+
+すでに開始した以下のクラウド処理は最終確認時点で進行中。新端末へ移っても重複投入せず、同じリソース/ジョブの状態を確認する。
+
+- Engine更新LRO: projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656/operations/1534845802046816256。最新check_engineはdone=false/updating。旧端末session48512も生存確認済み。新端末でこのローカルsession IDは使わず、python -m tools.check_engineでLROを照合する。
+- Cloud Build: ffcaa333-732b-46b5-a5d9-e6dfc8e35abb、最終確認WORKING。gcloud builds describeで同じIDを確認する。
+- 通常公開Cloud Runは00013-hexのまま。新しいAPIイメージはビルド中で未配置。Engineは共有リソースの更新中なので、完了後は新コードになる。新推論/ログ監査は未実施。
+- 下記の「生存handleなし」「クラウド未反映」はこの更新開始より前の状態。今回の処理状態は本節とHANDOFF末尾を優先する。
+
 ## ユーザーの最新指示
 
 - WebデモはMVP対象外。既存Webコードは参考として残す。

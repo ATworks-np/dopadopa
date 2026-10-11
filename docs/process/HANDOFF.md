@@ -328,3 +328,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - 既存Engine更新session48512生存、LRO1534845802046816256進行中。SDKのLRO出力をengine-operation.jsonへ記録。check_engine初回は旧LROを参照したため今回の完了証拠にはせず、最新LROへ訂正して再確認。
 - Cloud Build ffcaa333-732b-46b5-a5d9-e6dfc8e35abbはWORKING。初回--tag/--config併用は引数エラーで投入なし、既存cloudbuild.yaml指定で投入成功。
 - 次は同じEngine session/LROとBuild状態を確認する。新update/buildを重複投入しない。成功後に診断版Cloud Runをno-traffic/QA tagで配置しlearning-shorts再検証。通常公開00013-hexは維持、端末操作なし。
+
+## 最終引き継ぎ
+- ユーザーが「引き継ぎがゴール」と明示。旧端末での追加開発を終了する。MVP完成を今回の完了条件にしない。
+- 最終照合: session48512生存/新出力なし、Engine最新LRO done=false/updating、Cloud Build ffcaa333 WORKING。開始済みクラウド処理は継続し、新端末から同じIDで状態確認可能。重複投入しない。
+- RESUME_ON_ANOTHER_MACHINE冒頭へ進行中処理と再開条件を追加。通常Cloud Run新配置・新テストは行わない。実機保留/エミュレータ不使用/Web対象外維持。
