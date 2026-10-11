@@ -6,6 +6,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 import requests
+from server.models import Analysis
+from server.samples import sample_batch
 
 BASE = "https://dopaguard-api-463106527119.asia-northeast1.run.app"
 
@@ -70,6 +72,14 @@ def main():
             raise RuntimeError("real cloud analysis failed")
         assert analysis["result"]["data_origin"] == "sample"
         assert analysis["result"]["user_confirmation_required"] is True
+        validated = Analysis.model_validate(analysis["result"])
+        assert validated.analysis_id == analysis["analysis_id"] and validated.session_id == sid
+        sample = sample_batch(args.scenario)
+        validated.validate_evidence(sample.events)
+        required_tools = {"get_user_goals", "get_timeline", "get_click_events"}
+        assert required_tools <= {row["tool"] for row in analysis["trace"]}
+        result["evidence_valid"] = True
+        checks.append("analysis identity, sample evidence and mandatory investigation tools verified")
         if args.scenario == "unobservable":
             assert analysis["status"] == "insufficient_data"
             assert analysis["result"]["goal_alignment"] == "unknown"

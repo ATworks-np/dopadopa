@@ -312,3 +312,9 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 ## DG-016 説明台本草案
 - DEMO_SCRIPT.mdに課題→観測→Tool調査→根拠/unknown→本人訂正→制約の説明案と提出前チェックリストを作成。保存済み架空証拠のみ、実機成功の代替にはしない。
 - 約90秒は構成案で公式指定尺ではない。動画未収録、公式提出先/締切未確認、新端末再現/実機ACは残る。DG-016 in-progress維持。
+
+## DG-017 learning-shorts公開分析失敗
+- verify_cloud_apiにAnalysis schema/本人session・analysis ID/既存sample根拠ID/必須3Toolの独立照合を追加。分析完了だけで合格にしない。
+- session38450終端exit1。learning-shortsの公開分析HTTP200だがstatus failed/trace空、35.173秒、2Authcleanuptrue。cloud-api-smoke-learning-shorts.json。追加根拠照合より前に失敗。
+- 同時刻のCloud Run固定診断はengine_output。以前のengine_transportとは異なる段階で、原因は未特定。次はEngineの機密なしerror envelope分類/内部失敗段階を切り分ける。学習/unknownの成功を全3ケース安定成功と扱わない。
+- 実機保留/エミュレータ不使用/Web対象外維持。生存試験handleなし。
