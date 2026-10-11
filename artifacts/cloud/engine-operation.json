@@ -1,6 +1,6 @@
 {
-  "operation_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656/operations/21003008552730624",
+  "operation_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656/operations/7129090595426926592",
   "candidate_resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656",
-  "status_at_recording": "creating",
+  "status_at_recording": "updating",
   "verified_inference": false
 }

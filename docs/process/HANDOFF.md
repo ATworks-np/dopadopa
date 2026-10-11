@@ -225,3 +225,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - Engine8372512764677062656作成成功、session7660終端。API LRO doneをcheck_engineで確認。
 - verify_engineの初回実queryは400/invalid generation、架空Authとクラウド内容cleanuptrue。Proto Structの整数がdoubleになる境界に対応、安全な整数floatを受理・小数/NaN/bool拒否、入口3件PASS。修正はローカルのみ。
 - 次は同じEngine resourceをSDKupdate（新create禁止）→sample query/認可・ログ確認→Cloud Run remote連携。実機待機/Web対象外。
+
+## DG-017 更新待ち・remote adapter
+- session87233のSDKupdate進行中、最後のpoll非終端。LRO projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656/operations/7129090595426926592。同じprocess/operationを確認して続行。新create禁止。
+- server/remote_engine.py追加、単体2件PASS。まだapp.py分岐へ未接続/Cloud Run未配置。次はEngine更新完了→verify_engine→認可とログ非出力実確認→API組込み。現公開00010-gth adk。
+- 実機待機/Web対象外を維持。
