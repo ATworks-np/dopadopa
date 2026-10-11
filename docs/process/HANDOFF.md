@@ -200,3 +200,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - 固定snapshotのIDsでRoom元イベントを取得して同意/整合性を検証。後発501件を含む最新timelineによる再送拒否を修正、初回送信上限は維持。端末のみ件数の切捨ても解消。
 - session73658終端SUCCESS、単体18件/assembleDebug/クラウド1件PASS。クラウド2件/端末503件/遅延501表示、finally cleanup成功。android-frozen-retry-overflow.xml。Androidのみ変更、公開API00010-gthの変更不要。
 - 次はAgent Engine基盤の追加配置とAndroid中心の提出物整備。実機収集/最終E2Eはユーザー再開指示まで待機。WebはMVP対象外。
+
+## DG-015 MVP受入証拠の棚卸し
+- DG-015をforce in-progress。依存は実機待機で未完了、既存証拠確認とprocess/MVP_ACCEPTANCE_STATUS.md作成のみ先行。
+- AC別に証拠範囲/残確認を記載、実機再開後の手順を明文化。実機待機/Web対象外を維持。保存済みGemini根拠監査PASS、新規推論/実ログなし。
+- 次はAgent Engine追加配置の境界/公式SDK確認、Android中心の提出手順。DG-015は実機E2E未実施でdoneにしない。
