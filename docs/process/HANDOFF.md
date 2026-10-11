@@ -283,3 +283,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - ユーザーの新指示により今後エミュレータを使わない。実機保留/Web対象外も維持。端末連携未確認として管理する。
 - 公開API初回成功証拠をengine-public-api-first-pass.jsonに保持。端末を使わないverify_cloud_api再検証session85966開始、生存/未終端。次は同じsessionをpoll、再起動しない。
 - その後session85966終端exit0 PASS。Engine公開分析completed/3Tool、認可/訂正/削除世代、2一時Authcleanuptrue。cloud-api-smoke.json更新。Androidでの失敗は解消確認しておらず、原因調査は残る。稼働中のテストhandleなし。
+
+## DG-017 Android待機上限の修正
+- Cloud Run60秒より短かったAndroid分析read55秒を65秒へ変更。55.545秒のサーバー応答より先に端末が打切る不整合を修正。connect10秒/通常要求15秒/同意撤回キャンセルは維持。
+- 端末なしtestDebugUnitTest/assembleDebug SUCCESS。集計証拠android-analysis-timeout-build.json。実機保留・エミュレータ不使用を遵守。
+- Engine transport55秒タイムアウトの具体原因は未特定。この待機変更で遠隔分析成功や端末上の解消確認をしたとは扱わない。DG-017未完了、モデル45秒制限は維持。

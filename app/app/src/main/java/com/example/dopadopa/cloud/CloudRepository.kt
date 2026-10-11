@@ -163,7 +163,10 @@ class CloudRepository(context: Context,
         }
         try {
             connection.requestMethod = method
-            connection.connectTimeout = 10_000; connection.readTimeout = if (path == "/v1/analyses") 55_000 else 15_000
+            connection.connectTimeout = 10_000
+            // Cloud Run may use its full 60-second request budget, including
+            // remote Engine startup. Allow its response to arrive before giving up.
+            connection.readTimeout = if (path == "/v1/analyses") 65_000 else 15_000
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("Authorization", "Bearer $token")
             connection.setRequestProperty("Content-Type", "application/json")

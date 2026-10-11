@@ -1,0 +1,13 @@
+{
+  "tasks": [
+    "testDebugUnitTest",
+    "assembleDebug"
+  ],
+  "device_used": false,
+  "tests": 18,
+  "failures": 0,
+  "errors": 0,
+  "analysis_read_timeout_ms": 65000,
+  "cloud_run_timeout_seconds": 60,
+  "engine_transport_timeout_unresolved": true
+}
