@@ -6,7 +6,7 @@ import shutil
 import cloudpickle
 from server.engine_agent import DopaGuardEngineAgent
 
-FILES = ("__init__.py", "engine_agent.py", "auth.py", "store.py", "adk_agent.py", "agent.py", "models.py")
+FILES = ("__init__.py", "engine_agent.py", "auth.py", "store.py", "live.py", "adk_agent.py", "agent.py", "models.py")
 
 def main():
     root = Path(__file__).resolve().parents[1]

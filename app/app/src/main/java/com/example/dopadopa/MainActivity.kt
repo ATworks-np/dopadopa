@@ -29,6 +29,9 @@ class MainActivity : ComponentActivity() {
         val prefs = remember { getSharedPreferences("guard", MODE_PRIVATE) }
         var confirmed by remember { mutableStateOf(prefs.getBoolean("goal_confirmed", false)) }
         var collection by remember { mutableStateOf(prefs.getBoolean("collection_consent", false)) }
+        var automatic by remember { mutableStateOf(prefs.getBoolean("automatic_consent", false)) }
+        var editingGoal by remember { mutableStateOf(false) }
+        var goalDraft by remember { mutableStateOf("") }
         var cloud by remember { mutableStateOf(prefs.getBoolean("cloud_consent", false)) }
         var goal by remember { mutableStateOf(prefs.getString("goal", "目的を確認してYouTubeを使い、意図しない長時間利用を減らしたい").orEmpty()) }
         var longUse by remember { mutableStateOf(false) }
@@ -45,8 +48,25 @@ class MainActivity : ComponentActivity() {
         var cloudBusy by remember { mutableStateOf(false) }
         var cloudStatus by remember { mutableStateOf("まだ同期していません。") }
         var cloudDataEpoch by remember { mutableIntStateOf(0) }
+        DisposableEffect(prefs) {
+            val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                if (key == "automatic_consent") automatic = prefs.getBoolean("automatic_consent", false)
+            }
+            prefs.registerOnSharedPreferenceChangeListener(listener)
+            onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+        }
         DisposableEffect(auth) {
-            val listener = FirebaseAuth.AuthStateListener { account = it.currentUser?.email }
+            val listener = FirebaseAuth.AuthStateListener {
+                val uid = it.currentUser?.uid
+                if (prefs.getString("automatic_owner_uid", null) != uid) {
+                    synchronized(PrivacyGate.lock) {
+                        prefs.edit().putBoolean("automatic_consent", false).commit()
+                        CloudRepository.cancel()
+                    }
+                    automatic = false
+                }
+                account = it.currentUser?.email
+            }
             auth.addAuthStateListener(listener)
             onDispose { auth.removeAuthStateListener(listener) }
         }
@@ -57,11 +77,11 @@ class MainActivity : ComponentActivity() {
         }
         fun revoke(delete: Boolean) {
             synchronized(PrivacyGate.lock) {
-                prefs.edit().putBoolean("collection_consent", false).putBoolean("cloud_consent", false).commit()
+                prefs.edit().putBoolean("collection_consent", false).putBoolean("cloud_consent", false).putBoolean("automatic_consent", false).commit()
                 CloudRepository.cancel()
                 if (delete) deleteFile("spike-events.jsonl")
             }
-            collection = false; cloud = false
+            collection = false; cloud = false; automatic = false
             if (delete) {
                 saving = true
                 PrivacyGate.io.execute {
@@ -76,9 +96,9 @@ class MainActivity : ComponentActivity() {
                 }
             } else saveConsent()
         }
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("DopaGuard", style = MaterialTheme.typography.headlineLarge)
-            Text("操作の流れから、使い方を振り返る", style = MaterialTheme.typography.titleMedium)
+            Text("YouTubeの使い方を、あなたのゴールに沿って支える", style = MaterialTheme.typography.titleMedium)
             if (!confirmed) {
                 Text("1 · 困っていること", style = MaterialTheme.typography.titleLarge)
                 CheckRow("気づいたら長時間使っている", longUse) { longUse = it }
@@ -108,7 +128,7 @@ class MainActivity : ComponentActivity() {
                         runOnUiThread {
                             saving = false
                             if (result.isSuccess) {
-                                prefs.edit().putString("goal", value.description).putBoolean("goal_confirmed", true).commit(); confirmed = true
+                                prefs.edit().putString("goal", value.description).putString("goal_revision", value.goalId).putBoolean("goal_confirmed", true).commit(); confirmed = true
                             } else error = "ゴールの保存に失敗しました。再実行してください。"
                         }
                     }
@@ -116,26 +136,72 @@ class MainActivity : ComponentActivity() {
             } else {
                 Text("確認済みのゴール", style = MaterialTheme.typography.titleLarge)
                 Text(goal)
-                Text("観察から始めます。強制的な利用制限は行いません。")
+                OutlinedButton(enabled = !saving, onClick = { goalDraft = goal; editingGoal = true }) { Text("ゴールを変更") }
+                if (editingGoal) {
+                    OutlinedTextField(goalDraft, { if (it.length <= 500) goalDraft = it }, label = { Text("本人のゴール") }, modifier = Modifier.fillMaxWidth())
+                    Button(enabled = goalDraft.isNotBlank() && !saving, onClick = {
+                        saving = true
+                        val value = UserGoal("g-" + UUID.randomUUID(), goalDraft.trim(), "youtube", System.currentTimeMillis(), "local")
+                        // Invalidate pending work before changing the goal.
+                        automatic = false
+                        synchronized(PrivacyGate.lock) {
+                            prefs.edit().putBoolean("automatic_consent", false).commit()
+                            CloudRepository.cancel()
+                        }
+                        PrivacyGate.io.execute {
+                            val result = runCatching { GuardDatabase.get(this@MainActivity).dao().saveGoal(value) }
+                            runOnUiThread {
+                                saving = false
+                                if (result.isSuccess) {
+                                    synchronized(PrivacyGate.lock) {
+                                        prefs.edit().putString("goal", value.description).putString("goal_revision", value.goalId).commit()
+                                    }
+                                    goal = value.description; editingGoal = false
+                                } else error = "ゴールの保存に失敗しました。再実行してください。"
+                            }
+                        }
+                    }) { Text("変更を確認して保存") }
+                    OutlinedButton(onClick = { editingGoal = false }) { Text("キャンセル") }
+                }
+                Text("ゴールは本人が確認して変更します。AIが勝手に変更することはありません。")
                 HorizontalDivider()
                 Text("データと同意", style = MaterialTheme.typography.titleLarge)
                 Text("操作時刻と取得可能なクリック文言を端末内に保存します。入力欄・認証・機密UIは除外し、取得不能はmissingと記録します。")
                 CheckRow("端末内での収集に同意する", collection) { checked ->
                     collection = checked
+                    automatic = false
                     revision = "consent-" + UUID.randomUUID()
                     synchronized(PrivacyGate.lock) { prefs.edit().putBoolean("collection_consent", checked)
-                        .putString("consent_revision", revision).putLong("collection_since", System.currentTimeMillis()).commit() }
+                        .putBoolean("automatic_consent", false).putString("consent_revision", revision).putLong("collection_since", System.currentTimeMillis()).commit() }
                     CloudRepository.cancel()
                     saveConsent()
                 }
-                Text("Gemini解析では許可した操作文言とゴールをクラウドへ送信します。端末内収集とは別の同意です。同意以前のイベントは送りません。同期は下のボタンで開始します。")
+                Text("Gemini解析では許可した操作文言とゴールをクラウドへ送信します。端末内収集とは別の同意です。同意以前のイベントは送りません。手動同期は下のボタンから利用できます。")
                 CheckRow("クラウド解析への送信に同意する", cloud) { checked ->
                     cloud = checked
+                    automatic = false
                     revision = "consent-" + UUID.randomUUID()
-                    synchronized(PrivacyGate.lock) { prefs.edit().putBoolean("cloud_consent", checked).putString("consent_revision", revision).commit() }
-                    if (!checked) CloudRepository.cancel()
+                    synchronized(PrivacyGate.lock) { prefs.edit().putBoolean("cloud_consent", checked).putBoolean("automatic_consent", false).putString("consent_revision", revision).commit() }
+                    CloudRepository.cancel()
                     saveConsent()
                 }
+                Text("利用中の自動分析・提案", style = MaterialTheme.typography.titleLarge)
+                Text("有効にすると、YouTube利用中の取得可能なクリック文言とゴールを自動送信して分析します。ゴールから離れた可能性がある場合に提案し、あなたが選んだ場合だけ10分休止します。休止はすぐ解除できます。")
+                CheckRow("自動送信・分析と提案に同意する", automatic,
+                    enabled = collection && cloud && account != null && !saving && !editingGoal) { checked ->
+                    revision = "consent-" + UUID.randomUUID()
+                    synchronized(PrivacyGate.lock) {
+                        val editor = prefs.edit().putBoolean("automatic_consent", checked)
+                            .putString("automatic_owner_uid", auth.currentUser?.uid)
+                            .putLong("automatic_since", System.currentTimeMillis()).putString("consent_revision", revision)
+                        if (prefs.getString("goal_revision", null) == null) editor.putString("goal_revision", "g-" + UUID.randomUUID())
+                        editor.commit()
+                        CloudRepository.cancel()
+                    }
+                    automatic = checked
+                    saveConsent()
+                }
+                Text(if (automatic) "YouTube利用中に1分ごとに自動分析します。アイコンで待機中・判定中を確認できます。休止提案の操作は現在開発中です。" else "自動分析はOFFです。端末内収集・クラウド送信への同意とログインが必要です。")
                 Text("クラウドアカウント", style = MaterialTheme.typography.titleLarge)
                 Text("DopaGuardのログインです。Google Cloud管理アカウントとは別です。")
                 if (account == null) {
@@ -167,8 +233,8 @@ class MainActivity : ComponentActivity() {
                     OutlinedButton(enabled = !cloudBusy, onClick = {
                         cloudBusy = true
                         // Stop new uploads before deletion; already received data is removed by the API.
-                        cloud = false
-                        synchronized(PrivacyGate.lock) { prefs.edit().putBoolean("cloud_consent", false).commit(); CloudRepository.cancel() }
+                        cloud = false; automatic = false
+                        synchronized(PrivacyGate.lock) { prefs.edit().putBoolean("cloud_consent", false).putBoolean("automatic_consent", false).commit(); CloudRepository.cancel() }
                         saveConsent()
                         CloudRepository.io.execute {
                             val result = runCatching { CloudRepository(this@MainActivity).deleteCloud() }
@@ -180,9 +246,9 @@ class MainActivity : ComponentActivity() {
                         }
                     }) { Text("クラウドデータをすべて削除") }
                     OutlinedButton(enabled = !cloudBusy, onClick = {
-                        cloud = false
+                        cloud = false; automatic = false
                         revision = "consent-" + UUID.randomUUID()
-                        synchronized(PrivacyGate.lock) { prefs.edit().putBoolean("cloud_consent", false).putString("consent_revision", revision).commit(); CloudRepository.cancel() }
+                        synchronized(PrivacyGate.lock) { prefs.edit().putBoolean("cloud_consent", false).putBoolean("automatic_consent", false).putString("consent_revision", revision).commit(); CloudRepository.cancel() }
                         saveConsent(); auth.signOut()
                     }) { Text("ログアウト") }
                 }
@@ -217,9 +283,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable private fun CheckRow(label: String, checked: Boolean, change: (Boolean) -> Unit) {
+    @Composable private fun CheckRow(label: String, checked: Boolean, enabled: Boolean = true, change: (Boolean) -> Unit) {
         Row(Modifier.fillMaxWidth()) {
-            Checkbox(checked, change)
+            Checkbox(checked, change, enabled = enabled)
             Text(label, Modifier.padding(top = 12.dp))
         }
     }

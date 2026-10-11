@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-11",
+  "device": "Pixel 9a",
+  "android_release": "17",
+  "connection": "wireless_adb",
+  "data_origin": "real",
+  "installation_and_launch": "pass",
+  "cloud_sync_sent_sessions": 8,
+  "cloud_sync_pending_sessions": 0,
+  "analyses": [
+    {"event_count": 3, "status": "insufficient_data", "goal_alignment": "unknown", "segments": 0, "invalid_evidence_refs": 0},
+    {"event_count": 26, "status": "completed", "goal_alignment": "unknown", "segments": 1, "evidence_refs": 4, "invalid_evidence_refs": 0}
+  ],
+  "required_tools_observed": ["get_user_goals", "get_timeline", "get_click_events"],
+  "evidence_dialog": "CLICK / available / clicked_node / direct and collected video item text displayed",
+  "feedback_ui": "displayed; unanswered; no feedback submitted",
+  "raw_text_or_credentials_in_artifact": false,
+  "limitations": ["Original YouTube screen and captured text not independently compared", "Feedback save not tested", "Intermittent cloud failure not ruled out", "All YouTube screen types not tested"]
+}

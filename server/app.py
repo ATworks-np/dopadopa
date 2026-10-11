@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from datetime import datetime, timezone, timedelta
@@ -9,10 +10,32 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 from server.auth import authenticated_user
-from server.models import SessionBatch, FeedbackInput
-from server.store import MemoryStore, FirestoreStore, ConflictError
+from server.models import SessionBatch, FeedbackInput, LiveSnapshotInput
+from server.store import MemoryStore, FirestoreStore, ConflictError, ExpiredSnapshotError, RateLimitError
+from server.live import SnapshotStoreView, read_snapshot
 
 app = FastAPI(title="DopaGuard", version="0.1.0")
+log = logging.getLogger("dopaguard")
+# Closed vocabulary. Exception text, IDs, tokens, and observation text are never logged.
+DIAGNOSTIC_STAGES = {"configuration", "service_credentials", "engine_transport", "engine_http_rejection",
+    "engine_output", "engine_model_execution", "engine_model_deadline", "engine_result_validation",
+    "model_execution", "model_deadline", "result_validation", "generation_validation", "trace_validation",
+    "local_runner"}
+ALIGNMENTS = {"unknown", "aligned", "possibly_diverged"}
+TOOL_NAMES = {"get_user_goals", "get_timeline", "get_click_events", "get_past_feedback"}
+
+def diagnostic_stage(runner):
+    stage = getattr(runner, "failure_stage", "local_runner")
+    return stage if isinstance(stage, str) and stage in DIAGNOSTIC_STAGES else "unknown"
+
+def tool_list(trace):
+    if not isinstance(trace, list) or len(trace) > 12: return "invalid"
+    names = []
+    for row in trace:
+        name = row.get("tool") if isinstance(row, dict) else None
+        if name not in TOOL_NAMES: return "invalid"
+        names.append(name)
+    return ",".join(names) if names else "none"
 WEB = Path(__file__).resolve().parent / "web"
 app.mount("/assets", StaticFiles(directory=WEB), name="assets")
 
@@ -31,6 +54,14 @@ def get_store():
             app.state.store = MemoryStore()
         else: app.state.store = FirestoreStore(os.environ["GOOGLE_CLOUD_PROJECT"])
     return app.state.store
+
+@app.exception_handler(ExpiredSnapshotError)
+async def expired_snapshot(request, exception):
+    return JSONResponse({"detail": "snapshot expired"}, status_code=410)
+
+@app.exception_handler(RateLimitError)
+async def live_rate_limit(request, exception):
+    return JSONResponse({"detail": "automatic analysis limit; wait for new observations"}, status_code=429)
 
 @app.middleware("http")
 async def limit_body(request: Request, call_next):
@@ -132,12 +163,7 @@ def analyze(body: AnalyzeInput, uid=Depends(authenticated_user), store=Depends(g
     except Exception:
         record.update(status="failed", error="analysis unavailable; retry later")
         # No exception messages, request arguments, IDs, or tokens in diagnostics.
-        import logging
-        stage = getattr(locals().get("runner"), "failure_stage", "local_runner")
-        allowed = {"configuration", "service_credentials", "engine_transport", "engine_http_rejection",
-            "engine_output", "engine_model_execution", "engine_model_deadline", "engine_result_validation",
-            "result_validation", "generation_validation", "trace_validation", "local_runner"}
-        logging.getLogger("dopaguard").warning("analysis_failure stage=%s", stage if isinstance(stage, str) and stage in allowed else "unknown")
+        log.warning("analysis_failure stage=%s", diagnostic_stage(locals().get("runner")))
         record["trace"] = getattr(locals().get("runner"), "trace", [])
     store.put(uid, "analyses", aid, record, expected_generation=generation)
     return record
@@ -165,3 +191,81 @@ def read_feedback(analysis_id: str, uid=Depends(authenticated_user), store=Depen
 def delete_data(uid=Depends(authenticated_user), store=Depends(get_store)):
     store.delete_all(uid)
     return {"deleted": True}
+
+@app.post("/v1/live/snapshots")
+def register_live(body: LiveSnapshotInput, uid=Depends(authenticated_user), store=Depends(get_store),
+    cloud_generation: int = Header(default=0, ge=0, alias="X-DopaGuard-Generation")):
+    now = datetime.now(timezone.utc)
+    if body.generation != cloud_generation or body.generation != store.generation(uid):
+        raise ConflictError("generation changed")
+    age = (now - body.captured_at).total_seconds()
+    if not -5 <= age <= 60: raise HTTPException(422, "capture time outside allowed window")
+    store.prune_live(uid, now)
+    value = body.model_dump(mode="json")
+    value["events"] = sorted(value["events"], key=lambda e: (datetime.fromisoformat(e["timestamp"]), e["event_id"]))
+    value.update(received_at=now, expires_at=now + timedelta(hours=24))
+    saved = store.register_snapshot(uid, value, cloud_generation)
+    return {"snapshot_id": saved["snapshot_id"], "session_id": saved["session_id"],
+        "event_count": len(saved["events"]), "generation": saved["generation"],
+        "expires_at": saved["expires_at"]}
+
+@app.get("/v1/live/snapshots/{snapshot_id}")
+def live_snapshot(snapshot_id: str, uid=Depends(authenticated_user), store=Depends(get_store)):
+    valid_id(snapshot_id)
+    try: return read_snapshot(store, uid, snapshot_id)
+    except KeyError: raise HTTPException(404, "snapshot unavailable") from None
+
+@app.post("/v1/live/snapshots/{snapshot_id}/analyze")
+def analyze_live(snapshot_id: str, uid=Depends(authenticated_user), store=Depends(get_store),
+    authorization: str | None = Header(default=None),
+    cloud_generation: int = Header(default=0, ge=0, alias="X-DopaGuard-Generation")):
+    valid_id(snapshot_id)
+    generation = store.generation(uid)
+    if generation != cloud_generation: raise ConflictError("generation changed")
+    try: source = read_snapshot(store, uid, snapshot_id)
+    except KeyError: raise HTTPException(404, "snapshot unavailable") from None
+    now = datetime.now(timezone.utc)
+    # Old observations may be read for evidence but must not start a delayed intervention.
+    if (now - datetime.fromisoformat(source["captured_at"])).total_seconds() > 60:
+        raise HTTPException(409, "new observation snapshot required")
+    from hashlib import sha256
+    aid = "la-" + sha256(snapshot_id.encode()).hexdigest()
+    record = {"analysis_id": aid, "session_id": source["session_id"], "snapshot_id": snapshot_id,
+        "goal_revision": source["goal_revision"], "consent_revision": source["consent_revision"],
+        "context_sequence": source["context_sequence"], "generation": generation,
+        "status": "running", "data_origin": source["events"][0]["data_origin"], "trace": [], "evidence_validated": False,
+        "created_at": now.isoformat(), "expires_at": source["expires_at"]}
+    existing = store.claim_live_analysis(uid, snapshot_id, record, generation, now.timestamp())
+    if existing is not None: return existing
+    try:
+        if os.environ.get("AGENT_BACKEND") == "engine":
+            from server.remote_engine import RemoteEngineRunner
+            runner = RemoteEngineRunner(store, authorization)
+            result, trace = runner.run(uid, source["session_id"], aid, snapshot_id=snapshot_id)
+        else:
+            view = SnapshotStoreView(store, uid, snapshot_id)
+            if os.environ.get("AGENT_BACKEND") == "adk":
+                from server.adk_agent import AdkBehaviorRunner
+                runner = AdkBehaviorRunner(view)
+            else:
+                from server.agent import AgentRunner
+                runner = AgentRunner(view)
+            result, trace = runner.run(uid, source["session_id"], aid)
+        from server.models import Analysis, Event
+        result = Analysis.model_validate(result.model_dump(mode="json"))
+        if result.session_id != source["session_id"] or result.analysis_id != aid or result.data_origin != record["data_origin"]:
+            raise ValueError("analysis binding mismatch")
+        result.validate_evidence([Event.model_validate(e) for e in read_snapshot(store, uid, snapshot_id)["events"]])
+        if not {"get_user_goals", "get_timeline", "get_click_events"} <= {r["tool"] for r in trace}:
+            raise ValueError("required evidence investigation missing")
+        status = "insufficient_data" if result.goal_alignment == "unknown" and not result.segments else "completed"
+        record.update(status=status, result=result.model_dump(mode="json"), trace=trace, evidence_validated=True)
+        alignment = result.goal_alignment if result.goal_alignment in ALIGNMENTS else "unknown"
+        log.info("live_analysis status=%s alignment=%s tools=%s", status, alignment, tool_list(trace))
+    except Exception:
+        # Fixed diagnostics only. No model/provider exception or observation text is retained.
+        stage = diagnostic_stage(locals().get("runner"))
+        log.warning("live_analysis_failure stage=%s", stage)
+        record.update(status="failed", error="analysis unavailable", trace=[], diagnostic_stage=stage)
+    store.finish_live_analysis(uid, snapshot_id, record, generation)
+    return record

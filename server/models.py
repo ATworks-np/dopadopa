@@ -100,3 +100,24 @@ class Analysis(StrictModel):
 class FeedbackInput(StrictModel):
     verdict: Literal["correct", "incorrect", "unknown"]
     corrected_intent: str | None = Field(default=None, max_length=500)
+
+class LiveSnapshotInput(SessionBatch):
+    snapshot_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,100}$")
+    goal_revision: str = Field(min_length=1, max_length=100)
+    automatic_consent: Literal[True]
+    collection_consent: Literal[True]
+    consent_since: datetime
+    captured_at: datetime
+    context_sequence: int = Field(strict=True, ge=1)
+    generation: int = Field(strict=True, ge=0)
+    events: list[Event] = Field(min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def check_live_observation(self):
+        if self.captured_at.tzinfo is None or self.consent_since.tzinfo is None:
+            raise ValueError("timezone required")
+        if self.consent_since > self.captured_at:
+            raise ValueError("consent must precede capture")
+        if any(e.timestamp < self.consent_since or e.timestamp > self.captured_at for e in self.events):
+            raise ValueError("events outside consented snapshot")
+        return self

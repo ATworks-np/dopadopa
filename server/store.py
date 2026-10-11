@@ -3,14 +3,68 @@ from copy import deepcopy
 from hashlib import sha256
 from threading import RLock
 from time import time
+from datetime import datetime, timezone
 
 class ConflictError(ValueError): pass
+class ExpiredSnapshotError(ValueError): pass
+class RateLimitError(ValueError): pass
+
+def reserve_live_budget(state, snapshot_id, now):
+    starts = [at for at in state.get("live_starts", []) if now - at < 3600]
+    if state.get("live_busy_until", 0) > now:
+        raise RateLimitError("automatic analysis already running")
+    if len(starts) >= 60 or (starts and now - starts[-1] < 60):
+        raise RateLimitError("automatic analysis budget exhausted")
+    return {"live_starts": starts + [now], "live_busy_until": now + 70,
+        "live_busy_snapshot": snapshot_id}
+
+def same_snapshot(existing, value):
+    return {k: v for k, v in existing.items() if k not in {"received_at", "expires_at"}} == \
+        {k: v for k, v in value.items() if k not in {"received_at", "expires_at"}}
 
 class MemoryStore:
     def __init__(self):
         self.rows = {}
         self.lock = RLock()
         self.generations = {}
+        self.live_limits = {}
+
+    def register_snapshot(self, uid, value, generation):
+        with self.lock:
+            if generation != self.generation(uid): raise ConflictError("generation changed")
+            key = (uid, "snapshots", value["snapshot_id"])
+            old = self.rows.get(key)
+            if old is not None:
+                if not same_snapshot(old, value): raise ConflictError("immutable snapshot")
+                if old["expires_at"] <= datetime.now(timezone.utc): raise ExpiredSnapshotError("snapshot expired")
+                return deepcopy(old)
+            self.rows[key] = deepcopy(value)
+            return deepcopy(value)
+
+    def claim_live_analysis(self, uid, snapshot_id, record, generation, now):
+        with self.lock:
+            if generation != self.generation(uid): raise ConflictError("generation changed")
+            snapshot = self.get(uid, "snapshots", snapshot_id)
+            if snapshot["expires_at"].timestamp() <= now: raise ExpiredSnapshotError("snapshot expired")
+            address = (uid, "live_analyses", snapshot_id)
+            old = self.rows.get(address)
+            if old is not None:
+                if old["status"] == "running": raise RateLimitError("analysis already running")
+                return deepcopy(old)
+            self.live_limits[uid] = reserve_live_budget(self.live_limits.get(uid, {}), snapshot_id, now)
+            self.rows[address] = deepcopy(record)
+            return None
+
+    def finish_live_analysis(self, uid, snapshot_id, record, generation):
+        with self.lock:
+            self.put(uid, "live_analyses", snapshot_id, record, expected_generation=generation)
+            state = self.live_limits.get(uid, {})
+            if state.get("live_busy_snapshot") == snapshot_id: state["live_busy_until"] = 0
+
+    def prune_live(self, uid, now):
+        with self.lock:
+            self.rows = {k: v for k, v in self.rows.items() if not (k[0] == uid and
+                k[1] in {"snapshots", "live_analyses", "live_actions"} and v["expires_at"] <= now)}
 
     def generation(self, uid):
         with self.lock: return self.generations.get(uid, 0)
@@ -38,6 +92,7 @@ class MemoryStore:
         with self.lock:
             self.generations[uid] = self.generation(uid) + 1
             self.rows = {k: v for k, v in self.rows.items() if k[0] != uid}
+            self.live_limits.setdefault(uid, {})["live_busy_until"] = 0
 
 class FirestoreStore:
     def __init__(self, project):
@@ -55,6 +110,75 @@ class FirestoreStore:
         state = self.owner_ref(uid).get(timeout=10).to_dict() or {}
         if state.get("deleting", False): raise ConflictError("data deletion in progress")
         return state.get("generation", 0)
+
+    def register_snapshot(self, uid, value, generation):
+        from google.cloud import firestore
+        owner = self.owner_ref(uid)
+        ref = self.collection(uid, "snapshots").document(value["snapshot_id"])
+        @firestore.transactional
+        def write(transaction):
+            state = owner.get(transaction=transaction).to_dict() or {}
+            existing = ref.get(transaction=transaction)
+            if state.get("deleting") or state.get("generation", 0) != generation:
+                raise ConflictError("generation changed")
+            if existing.exists:
+                old = existing.to_dict()
+                if not same_snapshot(old, value): raise ConflictError("immutable snapshot")
+                if old["expires_at"] <= datetime.now(timezone.utc): raise ExpiredSnapshotError("snapshot expired")
+                return old
+            transaction.set(ref, value)
+            return value
+        return write(self.db.transaction())
+
+    def claim_live_analysis(self, uid, snapshot_id, record, generation, now):
+        from google.cloud import firestore
+        owner = self.owner_ref(uid)
+        source = self.collection(uid, "snapshots").document(snapshot_id)
+        ref = self.collection(uid, "live_analyses").document(snapshot_id)
+        @firestore.transactional
+        def claim(transaction):
+            state = owner.get(transaction=transaction).to_dict() or {}
+            snapshot = source.get(transaction=transaction)
+            existing = ref.get(transaction=transaction)
+            if state.get("deleting") or state.get("generation", 0) != generation:
+                raise ConflictError("generation changed")
+            if not snapshot.exists: raise KeyError("snapshot unavailable")
+            if snapshot.to_dict()["expires_at"].timestamp() <= now: raise ExpiredSnapshotError("snapshot expired")
+            if existing.exists:
+                old = existing.to_dict()
+                if old["status"] == "running": raise RateLimitError("analysis already running")
+                return old
+            budget = reserve_live_budget(state, snapshot_id, now)
+            transaction.set(owner, budget, merge=True)
+            transaction.set(ref, record)
+            return None
+        return claim(self.db.transaction())
+
+    def finish_live_analysis(self, uid, snapshot_id, record, generation):
+        from google.cloud import firestore
+        owner = self.owner_ref(uid)
+        ref = self.collection(uid, "live_analyses").document(snapshot_id)
+        @firestore.transactional
+        def finish(transaction):
+            state = owner.get(transaction=transaction).to_dict() or {}
+            if state.get("deleting") or state.get("generation", 0) != generation:
+                raise ConflictError("generation changed")
+            transaction.set(ref, record)
+            if state.get("live_busy_snapshot") == snapshot_id:
+                transaction.update(owner, {"live_busy_until": 0})
+        finish(self.db.transaction())
+
+    def prune_live(self, uid, now):
+        from google.cloud.firestore_v1.base_query import FieldFilter
+        for kind in ("snapshots", "live_analyses", "live_actions"):
+            for doc in self.collection(uid, kind).where(filter=FieldFilter("expires_at", "<=", now)).limit(100).stream(timeout=10):
+                from google.cloud import firestore
+                @firestore.transactional
+                def remove(transaction):
+                    current = doc.reference.get(transaction=transaction)
+                    if current.exists and current.to_dict()["expires_at"] <= now:
+                        transaction.delete(doc.reference)
+                remove(self.db.transaction())
 
     def put(self, uid, kind, key, value, immutable=False, expected_generation=None):
         from google.cloud import firestore
@@ -91,13 +215,13 @@ class FirestoreStore:
                 raise ConflictError("data deletion in progress")
             generation = state.get("generation", 0) + 1
             transaction.set(owner, {"generation": generation, "deleting": True,
-                "deletion_failed": False, "deletion_lease_until": time() + 120})
+                "deletion_failed": False, "deletion_lease_until": time() + 120}, merge=True)
             return generation
         generation = begin(self.db.transaction())
         # A failed delete raises: never claim partial deletion is complete.
         # All writers read the same owner document transactionally, including other instances.
         try:
-            for kind in ("feedback", "analyses", "sessions", "goals", "consents"):
+            for kind in ("live_actions", "live_analyses", "snapshots", "feedback", "analyses", "sessions", "goals", "consents"):
                 for doc in self.collection(uid, kind).stream(timeout=10):
                     @firestore.transactional
                     def remove(transaction):
@@ -120,5 +244,5 @@ class FirestoreStore:
         def finish(transaction):
             state = owner.get(transaction=transaction).to_dict() or {}
             if state.get("generation") == generation:
-                transaction.update(owner, {"deleting": False, "deletion_lease_until": 0})
+                transaction.update(owner, {"deleting": False, "deletion_lease_until": 0, "live_busy_until": 0})
         finish(self.db.transaction())

@@ -48,3 +48,13 @@ telemetry無効だけでは例外時のruntime stderrに引数が記録された
 `requirements.lock.txt` はADKとAgent Engine SDKを含む固定済み依存。ローカル試験と実クラウド試験は別の証拠として扱う。
 
 参照: [Google Gen AI SDK](https://github.com/googleapis/python-genai)、[Function calling](https://ai.google.dev/gemini-api/docs/function-calling)、[Firestore認証](https://docs.cloud.google.com/firestore/native/docs/authentication)。
+
+## 利用中スナップショット（DG-302 / v0.3）
+
+終了済みセッションを変更せず、`POST /v1/live/snapshots` に本人のゴール・goal_revision・consent_revision・3種類の同意・consent_since・captured_at・generation・context_sequenceと最大100イベントを送る。Firebase本人認証と `X-DopaGuard-Generation` を必須の境界として扱う。同一snapshot_idの同じ内容だけ再送可能で、再送で期限は延長しない。300KBの既存入口上限を適用する。
+
+`POST /v1/live/snapshots/{id}/analyze` は当該snapshotだけをAgent Toolへ公開する。取得後60秒以内に開始し、本人別60秒間隔・60回/時・同時1件をFirestoreトランザクションで適用する。失敗も回数へ算入し、端末/クラウドデータ削除で頻度制限をリセットしない。結果はsnapshot/goal/consent/generation/contextへ束縛する。サンプルはsampleのまま扱い、実機介入の証拠にしない。
+
+内容は24時間のexpires_atを持ち、期限後の読み取りをAPI/Toolで拒否する。登録時の期限切れ掃除に加え、snapshots/live_analyses/live_actionsのFirestore TTLを設定する。TTLの物理削除は非同期で、24時間ちょうどの消去を保証しない。
+
+検証: server単体61件、実Firestoreの不変性/原子実行/回数/削除、検証タグの実Agent Engine分析はsampleでPASS。証拠はartifacts/cloud/live-*.json。初回のlive分析はfailed、再試験はcompletedで原因未特定。公開への切替とAndroid自動実行は別の検証を要する。

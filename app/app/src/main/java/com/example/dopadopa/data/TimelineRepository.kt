@@ -17,6 +17,12 @@ class TimelineRepository(private val context: Context) {
     private var cursor = 0L
     private var lastScroll = 0L
 
+    /** Read on the collector executor after pollUsage; root foreground is checked by the caller. */
+    fun liveSession(now: Long): Session? {
+        val session = dao.sessionAt("youtube", now) ?: return null
+        return session.takeIf { it.endedAt == null && it.dataOrigin == "real" }
+    }
+
     fun hasUsagePermission(): Boolean {
         val ops = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         return ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) == AppOpsManager.MODE_ALLOWED

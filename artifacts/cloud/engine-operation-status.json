@@ -1,5 +1,6 @@
 {
-  "operation_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656/operations/1534845802046816256",
-  "done": false,
-  "status": "updating"
+  "operation_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656/operations/4982914266752352256",
+  "done": true,
+  "status": "deployed",
+  "resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656"
 }

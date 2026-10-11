@@ -1,5 +1,26 @@
 # MVPアーキテクチャ
 
+## v0.3目標構成（開発中）
+
+現行要件: requirements/REQUIREMENTS_v0.3.md。旧手動導線は下記に保持する。自動ルートは未接続。
+
+```mermaid
+flowchart LR
+    Y[YouTube利用中] --> C[端末収集・機密除外]
+    C --> P[同意/文脈/頻度Policy]
+    P --> S[不変snapshot API]
+    S --> A[Agent Tool調査/仮説]
+    A --> V[根拠/鮮度/現アプリ検証]
+    V --> O[overlay提案]
+    O --> U[本人が選択]
+    U -->|休止を承認| R[10分休止/即時解除]
+    U -->|続行/訂正/停止| F[本人選択記録]
+```
+
+端末は観測の変化で有界Agentを起動する。モデルは継続監視や制限実行を直接行わない。旧セッション凍結同期を変更せず、現在の観測は別snapshot契約で送信する。本人確認済みゴール/owner/同意revision/削除世代/文脈sequenceを結果と照合する。詳細と実装依存はDG-301〜308を参照。
+
+## v0.2から継承する既存構成
+
 ```mermaid
 flowchart LR
     A[YouTube / Android] --> B[UsageStats + Accessibility]
@@ -62,5 +83,5 @@ sequenceDiagram
 
 - Geminiはタップ検出器ではない。Androidが観測したイベントを**時系列の証拠**として扱う。
 - ゴールは本人が確認した内容を正とし、AIの観測仮説で勝手に書き換えない。
-- 介入エンジンはP1。今回のMVPの完成条件に含めない。
+- v0.3では自動提案と本人承認による休止をP0へ変更。未承認の制限は行わない。
 - 仕様上の未決事項は `process/RISKS_AND_DECISIONS.md` に記録する。

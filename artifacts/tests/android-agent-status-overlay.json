@@ -1,0 +1,22 @@
+{
+  "unit_tests": 32,
+  "failures": 0,
+  "assembleDebug": "PASS",
+  "status_ui": [
+    "待機中",
+    "判定中"
+  ],
+  "judging_bound_to_request": true,
+  "automatic_runtime_connected": true,
+  "enabled_overlay_device_verified": true,
+  "consent_changed_by_agent": false,
+  "install": "PASS",
+  "device": "Pixel 9a",
+  "device_consent_flags": {
+    "automatic_consent": true,
+    "collection_consent": true,
+    "cloud_consent": true
+  },
+  "judging_overlay_device_verified": true,
+  "latest_label_fix_installed": false
+}

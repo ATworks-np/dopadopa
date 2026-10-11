@@ -1,33 +1,165 @@
 {
   "project": "dopadopa",
   "data_origin": "sample",
+  "scenario": "learning-only",
   "checks": [
     "Firebase email/password signup",
     "health and unauthenticated/invalid token rejection",
     "real Firebase token owner isolation and sample provenance",
-    "Cloud Run ADK/Vertex analysis and other owner rejection",
+    "analysis identity, sample evidence and mandatory investigation tools verified",
+    "Cloud Run analysis and other owner rejection",
     "explicit correction saved and read back",
     "owner data deletion verified",
     "old and missing generation rejected after deletion; explicit current generation sync accepted"
+  ],
+  "started_at": "2026-10-11T10:05:18.685870+00:00",
+  "request_timings": [
+    {
+      "method": "GET",
+      "route": "/health",
+      "http_status": 200,
+      "elapsed_ms": 352
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 401,
+      "elapsed_ms": 191
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 401,
+      "elapsed_ms": 525
+    },
+    {
+      "method": "GET",
+      "route": "/v1/user/generation",
+      "http_status": 200,
+      "elapsed_ms": 792
+    },
+    {
+      "method": "POST",
+      "route": "/v1/demo/sessions/learning-only/import",
+      "http_status": 200,
+      "elapsed_ms": 591
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions/{id}",
+      "http_status": 404,
+      "elapsed_ms": 660
+    },
+    {
+      "method": "POST",
+      "route": "/v1/analyses",
+      "http_status": 200,
+      "elapsed_ms": 18922
+    },
+    {
+      "method": "GET",
+      "route": "/v1/analyses/{id}",
+      "http_status": 404,
+      "elapsed_ms": 649
+    },
+    {
+      "method": "POST",
+      "route": "/v1/analyses/{id}/feedback",
+      "http_status": 200,
+      "elapsed_ms": 651
+    },
+    {
+      "method": "GET",
+      "route": "/v1/analyses/{id}/feedback",
+      "http_status": 200,
+      "elapsed_ms": 522
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/user/data",
+      "http_status": 200,
+      "elapsed_ms": 911
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 200,
+      "elapsed_ms": 657
+    },
+    {
+      "method": "GET",
+      "route": "/v1/analyses/{id}",
+      "http_status": 404,
+      "elapsed_ms": 522
+    },
+    {
+      "method": "POST",
+      "route": "/v1/demo/sessions/learning-only/import",
+      "http_status": 409,
+      "elapsed_ms": 522
+    },
+    {
+      "method": "POST",
+      "route": "/v1/demo/sessions/learning-only/import",
+      "http_status": 409,
+      "elapsed_ms": 521
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 200,
+      "elapsed_ms": 720
+    },
+    {
+      "method": "GET",
+      "route": "/v1/user/generation",
+      "http_status": 200,
+      "elapsed_ms": 879
+    },
+    {
+      "method": "POST",
+      "route": "/v1/demo/sessions/learning-only/import",
+      "http_status": 200,
+      "elapsed_ms": 522
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 200,
+      "elapsed_ms": 494
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/user/data",
+      "http_status": 200,
+      "elapsed_ms": 853
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/user/data",
+      "http_status": 200,
+      "elapsed_ms": 709
+    }
   ],
   "analysis_status": "completed",
   "trace": [
     {
       "count": 1,
-      "elapsed_ms": 35,
+      "elapsed_ms": 22,
       "tool": "get_user_goals"
     },
     {
+      "tool": "get_timeline",
       "count": 2,
-      "elapsed_ms": 23,
-      "tool": "get_timeline"
+      "elapsed_ms": 28
     },
     {
       "count": 2,
-      "tool": "get_click_events",
-      "elapsed_ms": 41
+      "elapsed_ms": 32,
+      "tool": "get_click_events"
     }
   ],
+  "evidence_valid": true,
   "status": "passed",
   "temporary_accounts_cleaned": [
     true,

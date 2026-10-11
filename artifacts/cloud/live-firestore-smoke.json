@@ -1,0 +1,13 @@
+{
+  "data_origin": "sample",
+  "fixture_source": "synthetic",
+  "checks": [
+    "immutable replay without expiry extension",
+    "transactional single execution and cached terminal replay",
+    "failure consumes user budget and interval",
+    "expired reads rejected and content pruned",
+    "deletion removes content and keeps anti-abuse budget"
+  ],
+  "cleanup": true,
+  "status": "PASS"
+}

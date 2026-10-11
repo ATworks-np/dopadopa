@@ -1,0 +1,13 @@
+{
+  "interval_ms": 60000,
+  "first_run_after_ms": 60000,
+  "click_threshold": null,
+  "new_click_required": false,
+  "max_starts_per_hour": 60,
+  "android_unit_tests": 31,
+  "server_unit_tests": 61,
+  "assembleDebug": "PASS",
+  "runtime_connected": false,
+  "cloud_minute_budget_deployed": false,
+  "data_origin": "sample"
+}

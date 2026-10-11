@@ -12,11 +12,11 @@ from server.adk_agent import AdkBehaviorRunner, InvestigationFailure
 
 class DopaGuardEngineAgent:
     def query(self, firebase_token: str, session_id: str, analysis_id: str,
-              expected_generation: int) -> dict:
+              expected_generation: int, snapshot_id: str | None = None) -> dict:
         # Managed runtime prints failing call arguments to stderr. Never let a
         # business/auth/model exception escape with a Firebase token in kwargs.
         try:
-            return self._investigate(firebase_token, session_id, analysis_id, expected_generation)
+            return self._investigate(firebase_token, session_id, analysis_id, expected_generation, snapshot_id)
         except ConflictError:
             return {"error": "generation_conflict"}
         except KeyError:
@@ -27,13 +27,13 @@ class DopaGuardEngineAgent:
             return {"error": "analysis_unavailable"}
 
     def _investigate(self, firebase_token: str, session_id: str, analysis_id: str,
-                     expected_generation: int) -> dict:
+                     expected_generation: int, snapshot_id: str | None = None) -> dict:
         if os.environ.get("DOPAGUARD_PROJECT"):
             os.environ["GOOGLE_CLOUD_PROJECT"] = os.environ["DOPAGUARD_PROJECT"]
             os.environ["GOOGLE_CLOUD_LOCATION"] = os.environ.get("DOPAGUARD_MODEL_LOCATION", "global")
         if not isinstance(firebase_token, str) or not 1 <= len(firebase_token) <= 16_000:
             raise ValueError("invalid authentication")
-        for value in (session_id, analysis_id):
+        for value in (session_id, analysis_id) + ((snapshot_id,) if snapshot_id is not None else ()):
             if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", value):
                 raise ValueError("invalid ID")
         # Protobuf Struct serializes JSON numbers as doubles at the RPC boundary.
@@ -48,7 +48,12 @@ class DopaGuardEngineAgent:
                 raise ConflictError("data changed before investigation")
             # Managed query handlers may already run on an asyncio event loop.
             # Give the synchronous runner its own loop without retaining state.
-            runner = AdkBehaviorRunner(store)
+            if snapshot_id is not None:
+                from server.live import SnapshotStoreView
+                view = SnapshotStoreView(store, uid, snapshot_id)
+                view.get(uid, "sessions", session_id)
+            else: view = store
+            runner = AdkBehaviorRunner(view)
             with ThreadPoolExecutor(max_workers=1) as worker:
                 try:
                     result, trace = worker.submit(runner.run, uid, session_id, analysis_id).result(timeout=50)
@@ -59,6 +64,7 @@ class DopaGuardEngineAgent:
                     raise
             if store.generation(uid) != expected_generation:
                 raise ConflictError("data changed during investigation")
+            if snapshot_id is not None: view.get(uid, "sessions", session_id)
             return {"result": result.model_dump(mode="json"), "trace": trace}
         finally:
             store.db.close()

@@ -1,5 +1,16 @@
 # 作業引継ぎ / 2026-10-11 / Codex
 
+## 現在の引き継ぎ入口（2026-10-11 19:15 JST）
+
+[現在の状態からの引き継ぎ](HANDOFF_2026-10-12_CURRENT.md) を最初に読む。YouTube利用中の自動Agent分析、状態アイコン、固定段階の分析ログは実機で動作済み。公開は00018-hab。休止提案は未完成。以下は過去からの作業履歴。
+
+
+## 2026-10-11 新端末・実機デバッグ再開（過去の実機保留を更新）
+- ユーザーからWi-Fi実機へのインストールと実機操作デバッグの許可あり。Pixel 9a / Android 17でDebug APKのインストール・起動、収集と明示クラウド同期8セッションを確認。今後エミュレータ不使用は維持。
+- 実データで分析2件成功: 3イベントはinsufficient_data/unknown、26イベントはcompleted/unknown・話題候補1件。必須3Tool、元イベントに存在する根拠参照4件、根拠画面のクリック文言を確認。本人訂正は未回答のまま、保存未検証。
+- MainActivityのシステムバーとの重なりをsafeDrawingPaddingで修正。単体/APKビルド成功。証拠artifacts/tests/android-real-device-debug.json（原文/認証情報なし）。DG-015 in-progress。
+- 元YouTube画面との原文照合、全画面の収集、本人訂正保存、撤回/削除、断続的クラウド失敗は引き続き未完了。実データ成功をサンプル証拠と区別する。
+
 ## 成果
 - ZIPをプロジェクトルートのdocsへ展開。正本DOCX・AGENTS・プロセス・契約・チケットを確認。
 - DG-002: Room v1、6 Entity/DAO、JSON/Pydantic契約、migration/保持/削除の方針。done。
@@ -333,3 +344,40 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - ユーザーが「引き継ぎがゴール」と明示。旧端末での追加開発を終了する。MVP完成を今回の完了条件にしない。
 - 最終照合: session48512生存/新出力なし、Engine最新LRO done=false/updating、Cloud Build ffcaa333 WORKING。開始済みクラウド処理は継続し、新端末から同じIDで状態確認可能。重複投入しない。
 - RESUME_ON_ANOTHER_MACHINE冒頭へ進行中処理と再開条件を追加。通常Cloud Run新配置・新テストは行わない。実機保留/エミュレータ不使用/Web対象外維持。
+
+## 2026-10-11 Pixel 9a デバッグ・修正版インストール完了
+- 旧端末引継ぎ後、ユーザーが本チャットで実機インストール/操作デバッグを指示し、実機保留を解除。新しい実機結果は本資料冒頭の「新端末・実機デバッグ再開」とDG-015、android-real-device-debug.jsonを参照。
+- MainActivity safeDrawingPadding修正版をWi-Fi adb install -rで更新成功。更新後の起動とシステムバーとの重なり解消、同意/ログイン維持を実画面で確認。Android単体/APKビルド、docs4件、22ticket validate成功。
+- 実データ同期8セッション、分析2件と根拠表示成功。本人訂正保存・原画面照合・全画面/削除受入は未完了。DG-015 in-progress。実原文と認証情報はリポジトリへ保存していない。クラウド配置は変更していない。
+
+## 2026-10-11 要件v0.3・自動提案開発開始
+- ユーザーが利用中監視→ゴール乖離候補→overlayで本人へ制限提案という体験を明示し、要件再設計/開発チケット作成/着手を指示。
+- REQUIREMENTS_v0.3.mdを現行正本として新設。DG-300〜308（9件/P0）、RT/RA追跡表、AGENTS/README/構成/実装順/DoD/ADRを更新。DG-300 done。旧v0.2 DOCXと既存実績は履歴として維持する。
+- DG-301: LiveAnalysisPolicyを実装。新Policy13件+既存18件=31件PASS、APKビルド成功。owner/同意/goal/世代/前面/クリック文脈、予算/鮮度/重複/通知間隔を検証。artifact android-live-policy-build.json。実機/クラウド/実ログの新使用なし。
+- 自動実行・snapshot API・overlay・休止は未接続。既存アプリの動作を新仕様完成と扱わない。次はDG-302のsnapshot API、DG-306の自動分析opt-in、DG-303のcollector接続。再起動を跨ぐ予算/期限復元はDG-307。
+- 制限の初期仕様は本人が選んだときだけ10分休止/即時解除。既存クラウド同意から自動で有効化しない。エミュレータ不使用/Web対象外維持。
+
+## 2026-10-11 ログイン後の継続（DG-302 / DG-306）
+- gcloud本人ログイン確認。既存Engine更新LRO4982914266752352256 done、同じresourceを継続使用。Build60fcfd86 SUCCESS、QA00015-fiq配置、公開00013-hex維持。
+- server61件PASS、実Firestore live smoke PASS、一時sample内容cleanup。live API初回failed→再試験completed/PASS、必須3Tool/根拠/owner/冪等/削除世代を検証。検証時Engineログ729件でsample原文/JWT未検出。
+- 既存手動分析のQA回帰は55.7秒後failed、診断engine_transport。一時Auth2件cleanup true。まだ公開切替しない。DG-302 in-progress、未解決timeout/TTL有効化待ち。
+- 24h expires_atにFirestore TTLを3collection groupへ申請、最新stateCREATING。API/Toolは物理削除前でも期限を拒否する。
+- クラウド待機中に独立DG-306開始。MainActivityに個別自動同意/ゴール変更/owner失効を追加、31単体PASS/APK成功、Wi-Fi実機へ更新成功。UI checkbox OFF確認。本人の新同意を代行していない。
+- DG-306 in-progress: OS権限表示、ゴール変更/撤回の実機検証、runtime接続未完了。次はEngine transport原因確認、TTL状態確認、DG-306を完成してDG-303自動transport→DG-304 overlayへ進める。
+- このターンのクラウド分析はsampleのみ。端末は本人UIの読取とAPK更新のみ、原文/認証値を証拠へ保存していない。未完了のチケットをdoneにしていない。
+
+## 2026-10-11 本人指定: YouTube利用中1分ごと
+- DG-301を再開し、Policyを初回60秒/以後最小60秒、60回/直近1時間へ変更。クリック件数/新クリック条件を撤廃。クリックsequenceは結果の鮮度確認に保持し、提案には実クリック根拠が必要。
+- server/store.py予算も60秒/60回へ変更、server61件PASS。Android31件PASS/assembleDebug PASS、ticket validate PASS。証拠artifacts/tests/agent-minute-policy.json。
+- requirements v0.3、ADR、DG-303周期契約を更新。runtime接続は未実装、今回APK未インストール/クラウド再配置未実施。既存QAの旧予算20回が残るため配置前に整合を取る。実ログは扱っていない。
+
+## 2026-10-11 自動分析接続後の引き継ぎ確定
+- 本人要求により現時点の引き継ぎ資料HANDOFF_2026-10-11_CURRENT.mdを新設。再開入口/README/受入状況/チケットを更新。
+- 自動分析は実機real 1イベントでinsufficient_data/unknown・3Toolを確認。次の34イベント回はrunning表示を実画面で確認し、その後discarded。開始7/終了6/最新runningを19:15JSTに読取（全件成功とは扱わない）。
+- 最新ローカルAPKはクリックsequence競合対策と判定中ラベル折り返し修正を含む。36単体/assembleDebug成功、インストール未実施。installed/local hash不一致を証拠へ記録。
+- 公開00016-poy 100%、Build bdf09162 SUCCESS、Engine LRO4982914266752352256 done、TTL3種ACTIVE。既知の進行中配置/buildなし。
+- DG-302/303/304/306/016はin-progress、DG-305/307/308はbacklog、DG-300/301 done。乖離休止提案/休止/解除/永続復元/E2Eは未完了。
+- 今回は書類と安全な状態証拠を整理したのみ。追加実装/配置/インストールなし。本人の自動同意ONを変更していない。原文/認証値/実画面画像をrepoへ保存していない。
+- workspace main、基点b60abdb、開発/書類は未コミット/未push。別端末への引き継ぎには未追跡ファイルも必要。
+
+- 引き継ぎ資料最終検証: docs4件PASS、31ticket validate PASS、git diff --check PASS、資料の参照リンク存在確認PASS。

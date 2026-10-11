@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-11",
+  "ticket": "DG-301",
+  "requirements_version": "0.3",
+  "tasks": ["testDebugUnitTest", "assembleDebug"],
+  "status": "BUILD SUCCESSFUL",
+  "tests": 31,
+  "policy_tests": 13,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "device_used": false,
+  "cloud_used": false,
+  "runtime_connected": false,
+  "boundaries": ["consent", "foreground", "screen_lock", "sensitive_ui", "click_evidence", "single_flight", "rolling_budget", "failure_backoff", "identity", "generation", "freshness", "notification_cooldown", "monotonic_clock"],
+  "remaining": ["snapshot_api", "automatic_consent_ui", "collector_and_transport_wiring", "overlay", "user_approved_pause", "durable_state", "real_device_e2e"]
+}

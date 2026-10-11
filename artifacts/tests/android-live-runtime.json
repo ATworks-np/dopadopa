@@ -1,0 +1,26 @@
+{
+  "captured_at": "2026-10-11T10:15:05.342369+00:00",
+  "device": "Pixel 9a",
+  "local_apk_sha256": "ed277c113b6c8b38c6a9d4eff027015f1ea381490b09314e564a0a36313dbc28",
+  "installed_apk_sha256": "c8e829125f474553116472f07e2abc73c9432f6203547edb6a42520d74f33714",
+  "latest_apk_installed": false,
+  "device_state": {
+    "live_total_starts": "7",
+    "live_last_tool_count": "3",
+    "live_total_finished": "6",
+    "live_last_alignment": "unknown",
+    "live_last_finished_at": "1791713667928",
+    "live_last_started_at": "1791713694149",
+    "automatic_consent": "true",
+    "live_last_origin": "real",
+    "live_last_event_count": "9",
+    "live_last_status": "running"
+  },
+  "android_tests": 36,
+  "android_failures": 0,
+  "build_status": "PASS",
+  "server_tests": 61,
+  "cloud_revision": "dopaguard-api-00016-poy",
+  "confirmed_real_loop": "automatic real analysis with 3 tools returned insufficient_data/unknown; another running state visually observed; later result discarded",
+  "raw_content_saved": false
+}

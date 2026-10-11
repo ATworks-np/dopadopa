@@ -1,0 +1,15 @@
+{
+  "device": "Pixel 9a",
+  "build": "DG-306 consent UI",
+  "automatic_checkbox_visible": true,
+  "checkbox": [
+    {
+      "checked": "false",
+      "enabled": "true"
+    }
+  ],
+  "consent_changed_by_agent": false,
+  "unit_tests": 31,
+  "assembleDebug": "PASS",
+  "install": "PASS"
+}

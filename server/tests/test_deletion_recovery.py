@@ -9,7 +9,7 @@ class DeletionRecoveryTest(unittest.TestCase):
         owner = SimpleNamespace(get=lambda **_: SimpleNamespace(to_dict=lambda: dict(state)))
         deleted = []
         transaction = SimpleNamespace(
-            set=lambda ref, value: (state.clear(), state.update(value)),
+            set=lambda ref, value, merge=False: (None if merge else state.clear(), state.update(value)),
             update=lambda ref, value: state.update(value),
             delete=lambda ref: deleted.append(ref))
         store = FirestoreStore.__new__(FirestoreStore)
@@ -24,12 +24,14 @@ class DeletionRecoveryTest(unittest.TestCase):
     @patch("google.cloud.firestore.transactional", side_effect=lambda fn: fn)
     @patch("server.store.time", return_value=1000)
     def test_expired_crashed_delete_can_be_retried(self, *_):
-        state = {"generation": 4, "deleting": True, "deletion_lease_until": 999}
+        state = {"generation": 4, "deleting": True, "deletion_lease_until": 999, "live_starts": [900]}
         store, deleted = self.make_store(state)
         store.delete_all("fictional-owner")
         self.assertEqual(5, state["generation"])
         self.assertFalse(state["deleting"])
-        self.assertEqual(5, len(deleted))
+        self.assertEqual(8, len(deleted))
+        self.assertEqual([900], state["live_starts"])
+        self.assertEqual(0, state["live_busy_until"])
 
     @patch("google.cloud.firestore.transactional", side_effect=lambda fn: fn)
     @patch("server.store.time", return_value=1000)

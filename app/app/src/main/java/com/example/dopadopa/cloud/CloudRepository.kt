@@ -14,6 +14,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import javax.net.ssl.HttpsURLConnection
 
+data class LiveCloudBinding(val uid: String, val revision: String, val goalRevision: String, val since: Long,
+    val cancellationEpoch: Long = CloudRepository.epoch())
+
 /** Network waits never occupy the collector executor. No tokens or content are logged. */
 class CloudRepository(context: Context,
     private val tokenSource: (FirebaseUser) -> String = { user ->
@@ -29,6 +32,39 @@ class CloudRepository(context: Context,
         auth.currentUser?.uid == uid && prefs.getBoolean("cloud_consent", false) &&
             prefs.getString("consent_revision", "") == revision &&
             prefs.getString("cloud_owner", uid) == uid
+
+    private fun liveAuthorized(binding: LiveCloudBinding): Boolean = binding.cancellationEpoch == cancellationEpoch.get() &&
+        authorized(binding.uid, binding.revision) &&
+        prefs.getBoolean("collection_consent", false) && prefs.getBoolean("automatic_consent", false) &&
+        prefs.getBoolean("goal_confirmed", false) && prefs.getString("automatic_owner_uid", null) == binding.uid &&
+        prefs.getString("goal_revision", null) == binding.goalRevision && prefs.getLong("automatic_since", -1) == binding.since
+
+    fun liveGeneration(binding: LiveCloudBinding): Long =
+        request("GET", "/v1/user/generation", null, binding.uid, binding.revision, live = binding).getLong("generation")
+
+    fun analyzeLive(body: JSONObject, binding: LiveCloudBinding, generation: Long): JSONObject {
+        require(liveAuthorized(binding))
+        val id = body.getString("snapshot_id")
+        require(id.matches(Regex("[A-Za-z0-9_-]{1,100}")))
+        require(body.getLong("generation") == generation)
+        request("POST", "/v1/live/snapshots", body, binding.uid, binding.revision, generation, binding)
+        return request("POST", "/v1/live/snapshots/$id/analyze", null, binding.uid, binding.revision, generation, binding)
+    }
+
+    fun liveBody(id: String, sessionId: String, goal: String, binding: LiveCloudBinding,
+        generation: Long, sequence: Long, capturedAt: Long, events: List<InteractionEvent>): JSONObject {
+        require(events.size in 1..100 && events.all {
+            it.sessionId == sessionId && it.consentRevision == binding.revision && it.dataOrigin == "real" &&
+                it.timestamp in binding.since..capturedAt
+        })
+        return JSONObject().put("snapshot_id", id).put("session_id", sessionId).put("user_goal", goal)
+            .put("goal_revision", binding.goalRevision).put("consent_revision", binding.revision)
+            .put("automatic_consent", true).put("collection_consent", true).put("cloud_consent", true)
+            .put("consent_since", Instant.ofEpochMilli(binding.since).toString())
+            .put("captured_at", Instant.ofEpochMilli(capturedAt).toString()).put("generation", generation)
+            .put("context_sequence", sequence)
+            .put("events", JSONArray().also { rows -> events.forEach { rows.put(eventJson(it)) } })
+    }
 
     fun sync(): String {
         synchronized(PrivacyGate.lock) { LocalRetention.prune(dao, queue) }
@@ -145,13 +181,16 @@ class CloudRepository(context: Context,
             .put("verdict", verdict).put("corrected_intent", correction ?: JSONObject.NULL), uid, revision)
     }
 
-    private fun request(method: String, path: String, body: JSONObject?, uid: String, revision: String?, generation: Long? = null): JSONObject =
-        JSONObject(requestText(method, path, body, uid, revision, generation))
+    private fun request(method: String, path: String, body: JSONObject?, uid: String, revision: String?, generation: Long? = null,
+        live: LiveCloudBinding? = null): JSONObject =
+        JSONObject(requestText(method, path, body, uid, revision, generation, live))
 
-    private fun requestText(method: String, path: String, body: JSONObject?, uid: String, revision: String?, generation: Long? = null): String {
+    private fun requestText(method: String, path: String, body: JSONObject?, uid: String, revision: String?, generation: Long? = null,
+        live: LiveCloudBinding? = null): String {
         val epoch = cancellationEpoch.get()
         val user = auth.currentUser ?: error("authentication required")
         require(user.uid == uid)
+        require(live == null || liveAuthorized(live))
         val token = tokenSource(user)
         val bytes = body?.toString()?.toByteArray(Charsets.UTF_8)
         require(bytes == null || bytes.size <= 300_000)
@@ -159,14 +198,15 @@ class CloudRepository(context: Context,
         synchronized(PrivacyGate.lock) {
             require(epoch == cancellationEpoch.get())
             require(auth.currentUser?.uid == uid && (revision == null || authorized(uid, revision)))
-            active = connection
+            require(live == null || liveAuthorized(live))
+            active.add(connection)
         }
         try {
             connection.requestMethod = method
             connection.connectTimeout = 10_000
             // Cloud Run may use its full 60-second request budget, including
             // remote Engine startup. Allow its response to arrive before giving up.
-            connection.readTimeout = if (path == "/v1/analyses") 65_000 else 15_000
+            connection.readTimeout = if (path == "/v1/analyses" || path.endsWith("/analyze")) 65_000 else 15_000
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("Authorization", "Bearer $token")
             connection.setRequestProperty("Content-Type", "application/json")
@@ -177,6 +217,7 @@ class CloudRepository(context: Context,
             if (bytes != null) {
                 connection.doOutput = true; connection.setFixedLengthStreamingMode(bytes.size)
                 require(epoch == cancellationEpoch.get() && (revision == null || authorized(uid, revision)))
+                require(live == null || liveAuthorized(live))
                 connection.outputStream.use { it.write(bytes) }
             }
             require(connection.responseCode in 200..299) { "cloud request failed" }
@@ -192,10 +233,11 @@ class CloudRepository(context: Context,
                 output.toByteArray()
             }
             require(content.size <= 300_000 && epoch == cancellationEpoch.get() && auth.currentUser?.uid == uid)
+            require(live == null || liveAuthorized(live))
             return content.toString(Charsets.UTF_8)
         } finally {
             connection.disconnect()
-            synchronized(PrivacyGate.lock) { if (active === connection) active = null }
+            synchronized(PrivacyGate.lock) { active.remove(connection) }
         }
     }
 
@@ -209,8 +251,13 @@ class CloudRepository(context: Context,
     companion object {
         const val BASE = "https://dopaguard-api-463106527119.asia-northeast1.run.app"
         val io = Executors.newSingleThreadExecutor()
-        @Volatile private var active: HttpsURLConnection? = null
+        private val active = mutableSetOf<HttpsURLConnection>()
         private val cancellationEpoch = AtomicLong()
-        fun cancel() { cancellationEpoch.incrementAndGet(); active?.disconnect() }
+        fun epoch(): Long = cancellationEpoch.get()
+        fun cancel() {
+            cancellationEpoch.incrementAndGet()
+            val connections = synchronized(PrivacyGate.lock) { active.toList() }
+            connections.forEach { it.disconnect() }
+        }
     }
 }

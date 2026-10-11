@@ -1,0 +1,7 @@
+{
+  "scope": "last 20 minutes; live sample QA only",
+  "entries_checked": 729,
+  "jwt_pattern_found": false,
+  "sample_text_found": false,
+  "status": "PASS"
+}

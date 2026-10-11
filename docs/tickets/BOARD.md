@@ -2,12 +2,15 @@
 
 > このファイルは `python docs/scripts/tickets.py board` で自動生成。直接編集しない。
 
-合計 **22** 件 / P0 **17** 件
+合計 **31** 件 / P0 **26** 件
 
-## backlog (5)
+## backlog (8)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
+| [DG-305](backlog/DG-305.md) | P0 | M6 | 本人承認済みYouTube休止と解除 | DG-304 | unassigned |
+| [DG-307](backlog/DG-307.md) | P0 | M6 | 本人選択履歴と再起動・撤回の状態管理 | DG-302, DG-303, DG-304, DG-305 | unassigned |
+| [DG-308](backlog/DG-308.md) | P0 | M6 | 自動監視・提案・休止の実機E2E受入 | DG-303, DG-304, DG-305, DG-306, DG-307 | unassigned |
 | [DG-101](backlog/DG-101.md) | P1 | Future | コンテンツ表示時間（露出）の推定 | DG-006, DG-007 | unassigned |
 | [DG-102](backlog/DG-102.md) | P1 | Future | やさしい通知・続行確認UI | DG-011, DG-013 | unassigned |
 | [DG-103](backlog/DG-103.md) | P1 | Future | Policy Agentの改善提案（未適用） | DG-013 | unassigned |
@@ -18,7 +21,7 @@
 
 _該当なし_
 
-## in-progress (9)
+## in-progress (13)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
@@ -31,6 +34,10 @@ _該当なし_
 | [DG-015](in-progress/DG-015.md) | P0 | M5 | AC-01〜AC-06 E2E検証と未達管理 | DG-003, DG-005, DG-006, DG-007, DG-008, DG-011, DG-012, DG-013 | Codex |
 | [DG-016](in-progress/DG-016.md) | P0 | M5 | 提出用README・説明資料・デモ動画の準備 | DG-015 | Codex |
 | [DG-017](in-progress/DG-017.md) | P0 | M3 | Agent Engine追加配置と認可境界検証 | DG-009, DG-010, DG-011 | Codex |
+| [DG-302](in-progress/DG-302.md) | P0 | M6 | 利用中スナップショットAPIとAgent読み取り契約 | DG-300 | Codex |
+| [DG-303](in-progress/DG-303.md) | P0 | M6 | YouTube利用中の自動同期・Agent実行 | DG-301, DG-302, DG-306 | Codex |
+| [DG-304](in-progress/DG-304.md) | P0 | M6 | ゴール乖離候補のオーバーレイ提案 | DG-301, DG-306 | Codex |
+| [DG-306](in-progress/DG-306.md) | P0 | M6 | 自動提案の個別同意とゴール設定UI | DG-300 | Codex |
 
 ## blocked (2)
 
@@ -43,7 +50,7 @@ _該当なし_
 
 _該当なし_
 
-## done (6)
+## done (8)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
@@ -53,3 +60,5 @@ _該当なし_
 | [DG-010](done/DG-010.md) | P0 | M3 | Gemini Tool Calling / Agent Runner | DG-009 | Codex |
 | [DG-011](done/DG-011.md) | P0 | M3 | Gemini行動理解の構造化出力と根拠検証 | DG-010 | Codex |
 | [DG-014](done/DG-014.md) | P0 | M5 | Cloud Run WebデモとAgentトレース可視化 | DG-010, DG-011 | Codex |
+| [DG-300](done/DG-300.md) | P0 | M6 | 利用中の自動提案を中心に要件v0.3へ再設計 | - | Codex |
+| [DG-301](done/DG-301.md) | P0 | M6 | 自動分析の起動条件と介入Policy | DG-300 | Codex |

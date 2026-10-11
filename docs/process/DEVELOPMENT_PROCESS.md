@@ -2,7 +2,7 @@
 
 ## 目的・担当範囲
 
-- 本文書を**日々の作業の基準**とする。要件定義の正本は `../requirements/DopaGuard_要件定義書_v0.2.docx`。
+- 本文書を**日々の作業の基準**とする。要件定義の現行正本は `../requirements/REQUIREMENTS_v0.3.md`。v0.2 DOCXは履歴。
 - チケットを小さな完成単位に分割して、トレーサビリティ、変更履歴、証拠、未達事項を残す。
 - 1チケット1PR/ブランチが原則。例: `feat/DG-006-click-collector`。コミット例: `feat(DG-006): collect YouTube click events`。
 
@@ -40,7 +40,7 @@ python docs/scripts/tickets.py validate
 3. **Test**：単体→統合→実機の順で実行し、失敗時の例外と復帰も検証する。
 4. **Review**：プライバシー、権限、仮説を事実として扱っていないか、サンプル/実ログの混同がないか確認。
 5. **Evidence**：実行コマンド・結果・スクリーンショット/ログパス（機密は伏せる）をチケットに記録。
-6. **Close**：チェックボックスを埋め `done` へ移動。対応FR/ACの満たした範囲を確認。
+6. **Close**：チェックボックスを埋め `done` へ移動。対応FR/AC/RT/RAの満たした範囲を確認。
 
 ## 日次の運用
 

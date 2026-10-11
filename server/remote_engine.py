@@ -15,17 +15,22 @@ class RemoteEngineRunner:
         self.store, self.authorization, self.trace = store, authorization, []
         self.failure_stage = "configuration"
 
-    def run(self, uid, session_id, analysis_id):
+    def run(self, uid, session_id, analysis_id, *, snapshot_id=None):
         resource = os.environ["AGENT_ENGINE_RESOURCE"]
         match = re.fullmatch(r"projects/(dopadopa|463106527119)/locations/(asia-northeast1)/reasoningEngines/[0-9]+", resource)
         if not match: raise ValueError("invalid Engine resource")
         generation = self.store.generation(uid)
-        session = self.store.get(uid, "sessions", session_id)
+        if snapshot_id is not None:
+            from server.live import SnapshotStoreView
+            view = SnapshotStoreView(self.store, uid, snapshot_id)
+            session = view.get(uid, "sessions", session_id)
+        else: session = self.store.get(uid, "sessions", session_id)
         self.failure_stage = "service_credentials"
         credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
         credentials.refresh(lambda **kwargs: Request()(**(kwargs | {"timeout": 10})))
         payload = {"class_method": "query", "input": {"firebase_token": self.authorization[7:],
             "session_id": session_id, "analysis_id": analysis_id, "expected_generation": generation}}
+        if snapshot_id is not None: payload["input"]["snapshot_id"] = snapshot_id
         self.failure_stage = "engine_transport"
         with requests.post("https://" + match[2] + "-aiplatform.googleapis.com/v1/" + resource + ":query",
             headers={"Authorization": "Bearer " + credentials.token}, json=payload,
@@ -51,6 +56,7 @@ class RemoteEngineRunner:
         result.validate_evidence([Event.model_validate(row) for row in session["events"]])
         self.failure_stage = "generation_validation"
         if self.store.generation(uid) != generation: raise ConflictError("data deleted during investigation")
+        if snapshot_id is not None: view.get(uid, "sessions", session_id)
         self.failure_stage = "trace_validation"
         rows = output["trace"]
         if not isinstance(rows, list) or len(rows) > 12: raise ValueError("invalid trace")
