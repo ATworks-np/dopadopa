@@ -1,5 +1,6 @@
 """Real Firebase/Cloud Run/Firestore/Vertex smoke test with temporary accounts."""
 import json
+import argparse
 import secrets
 from pathlib import Path
 import requests
@@ -7,6 +8,10 @@ import requests
 BASE = "https://dopaguard-api-463106527119.asia-northeast1.run.app"
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--engine-qa", action="store_true")
+    args = parser.parse_args()
+    base = "https://engine-qa---dopaguard-api-p4kp2phc5q-an.a.run.app" if args.engine_qa else BASE
     key = json.loads(Path("artifacts/cloud/firebase-web-config.json").read_text(encoding="utf-8"))["apiKey"]
     tokens, checks = [], []
     def identity(method, body):
@@ -17,7 +22,7 @@ def main():
     def api(method, path, token=None, body=None, expected=200, generation=None):
         headers = {"Authorization": "Bearer " + token} if token else {}
         if generation is not None: headers['X-DopaGuard-Generation'] = str(generation)
-        response = requests.request(method, BASE + path,
+        response = requests.request(method, base + path,
             headers=headers, json=body, timeout=65)
         if response.status_code != expected: raise RuntimeError(f"API {path}: HTTP {response.status_code}, expected {expected}")
         return response.json()
@@ -78,7 +83,11 @@ def main():
                 cleanup.append(True)
             except Exception: cleanup.append(False)
         result["temporary_accounts_cleaned"] = cleanup
-        Path("artifacts/cloud/cloud-api-smoke.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        result["target"] = base
+        filename = "engine-tag-api-smoke.json" if args.engine_qa else "cloud-api-smoke.json"
+        Path("artifacts/cloud/" + filename).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
         print(json.dumps(result, ensure_ascii=False))
+    if result["status"] != "passed" or not all(result["temporary_accounts_cleaned"]):
+        raise RuntimeError("cloud API verification failed")
 
 if __name__ == "__main__": main()

@@ -258,3 +258,10 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - Engine直接learning-shorts PASS/cleanuptrue、IAMuserロールにreasoningEngines.queryを確認。Cloud Run接続失敗原因は未特定。
 - app/remoteに機密なしfailure_stage許可定数ログ。server48件PASS。Build5c63bde4-a85d-4efd-9a71-53c1cd52580e開始。次は同build確認→診断版no-traffic/tagでQA→ログstage取得、原因修正。現公開00010-gth100%。
 - 実機待機/Web対象外。
+
+## DG-017 QA接続成功・履歴保存確認
+- Build5c63bde4-a85d-4efd-9a71-53c1cd52580e SUCCESS。診断版00013-hexをengine-qaタグ/通常traffic 0%で配置。
+- engine-tag-api-smoke.json: Engine経由API分析completed、必須3Tool、本人認証/別owner拒否、明示訂正、削除/旧世代拒否、現世代同期PASS。一時Auth2件cleanuptrue。架空データのみ。旧00011失敗の原因は未特定。
+- verify_cloud_apiに固定QAタグ検証先と失敗時の非ゼロ終了を追加。通常公開trafficは00010-gth ADKのまま。QA後のログ監査・公開切替・Android連携確認は未実施。
+- ユーザーが実機テスト保留を再指示。実機確認は再開指示まで行わない。WebデモはMVP対象外を維持。
+- 対応経緯は本HANDOFF、各ticket、検証artifacts、Git履歴に保存。チャット全文、認証情報、ログ原文は保存対象外。
