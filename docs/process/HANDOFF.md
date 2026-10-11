@@ -215,3 +215,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - tools.prepare_engine PASS。必要server7ファイルallowlist、cloudpickle stateless round-trip、source/lock hashesのengine-package.jsonを作成。private stagingはGit除外。
 - Engine未配置。次は専用SA/IAMとruntime payload/tokenログ非出力設定を確認しSDKcreate、resource記録、Cloud Run remote adapter、架空実推論とcleanup。現公開00010-gthはadk。
 - 実機待機/Web対象外継続。新規実ログ/推論なし。
+
+## DG-017 Agent Engine配置進行中
+- 専用SAと非公開staging bucket作成済み。tools.deploy_engineでatomic1017 credentials固定、telemetry falseを設定。ADC期限切れ・予約env拒否を修正。入口3件PASS。
+- 生存session7660でcreate進行中（最後のpollは出力なし、非終端）。LRO projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656/operations/21003008552730624。engine-operation.jsonに保存。次は同じhandle/LROを確認、成功なら実sample queryとログ検証/Cloud Run remote連携。再createしない。
+- 現Cloud Run00010-gth adkは維持。Engine推論未確認、実機待機/Web対象外。

@@ -12,6 +12,9 @@ from server.adk_agent import AdkBehaviorRunner
 class DopaGuardEngineAgent:
     def query(self, firebase_token: str, session_id: str, analysis_id: str,
               expected_generation: int) -> dict:
+        if os.environ.get("DOPAGUARD_PROJECT"):
+            os.environ["GOOGLE_CLOUD_PROJECT"] = os.environ["DOPAGUARD_PROJECT"]
+            os.environ["GOOGLE_CLOUD_LOCATION"] = os.environ.get("DOPAGUARD_MODEL_LOCATION", "global")
         if not isinstance(firebase_token, str) or not 1 <= len(firebase_token) <= 16_000:
             raise ValueError("invalid authentication")
         for value in (session_id, analysis_id):
