@@ -49,7 +49,28 @@ class CloudSyncIntegrationTest {
             cloud.sync()
             assertEquals(0, cloudSessions(auth).length())
             prefs.edit().putBoolean("cloud_consent", true).commit()
+            // Freeze the batch, then fail credential transport before POST.
+            val retryTokenCalls = java.util.concurrent.atomic.AtomicInteger()
+            val retryCloud = CloudRepository(context) { user ->
+                if (retryTokenCalls.incrementAndGet() == 2) throw java.io.IOException("fictional batch transport failure")
+                Tasks.await(user.getIdToken(false), 15, TimeUnit.SECONDS).token!!
+            }
+            retryCloud.sync()
+            val retryKey = auth.currentUser!!.uid + ":sample-allowed"
+            val frozen = dao.envelope(retryKey)!!
+            assertEquals(0, cloudSessions(auth).length())
+            assertTrue(queue.getLong("retry:$retryKey", 0) > System.currentTimeMillis())
+            dao.insertEvent(InteractionEvent("late-sample", "sample-allowed", "youtube", "com.google.android.youtube", now - 2000,
+                "CLICK", "後から保存した架空イベント", "available", "clicked_node", "direct", "sample", revision))
+            dao.saveGoal(UserGoal("changed-sample-goal", "再送後に変更した架空ゴール", "youtube", now, "cloud"))
+            // Expedite the retry in this fixture; production retains its backoff.
+            queue.edit().remove("retry:$retryKey").commit()
             cloud.sync()
+            assertEquals(frozen.json, dao.envelope(retryKey)!!.json)
+            val retriedTimeline = cloud.timeline("sample-allowed")
+            assertEquals(2, retriedTimeline.getJSONArray("events").length())
+            assertEquals(3, dao.timeline("sample-allowed").size)
+            assertTrue(cloud.sync().contains("端末のみ）1"))
             val rows = cloudSessions(auth)
             assertEquals(1, rows.length())
             assertEquals("sample-allowed", rows.getJSONObject(0).getString("session_id"))

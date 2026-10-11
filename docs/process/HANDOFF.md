@@ -173,3 +173,7 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - ユーザー指示でWebデモをMVPから除外。FR-09/AC-07/DG-014は参考成果。既存コード/公開環境は保持。
 - TRACEABILITY、DoD、実行計画、品質Gate、DG-015/016依存・受入、READMEを更新。Android→Gemini→根拠→訂正とAC-01〜06を完成条件として維持。
 - 実ログなし。残作業は同期追加検証、実機収集/E2E、Agent Engine配置、Android中心の提出素材。
+
+## DG-008 固定再送 実クラウドQA
+- CloudSyncIntegrationTest追加: batch資格取得失敗後のRoom snapshot/retry、遅延イベント/ゴール変更、固定JSON再送、クラウド2件/端末3件、端末のみ件数1を実Cloud Run/Firebaseで確認。session18243 SUCCESS/1PASS/skip0、android-frozen-retry.xml。finally cleanup通過、実ログなし。
+- DG-008 in-progress維持。Webはユーザー指示によりMVP対象外。次は固定snapshotの再送前に遅延イベントが上限を超えた場合の扱い、キュー保持期限、削除障害復帰を点検。実機収集/E2E、Agent Engine、Android中心の提出素材も残る。
