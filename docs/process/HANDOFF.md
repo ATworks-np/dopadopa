@@ -235,3 +235,7 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - 初回更新成功後のverify_engineはevent loop/asyncio衝突で失敗、cleanuptrue。engine_agentの同期runnerを呼出し単位の専用threadへ変更、managed loopテスト3件PASS。
 - session52982生存/非終端、LRO6992575231722258432で同じEngine更新中。次は同じhandle/operation確認→verify_engine→ログと認可実検証。
 - app.py engine分岐接続済みだが未配置/環境設定adk維持。全46件PASS、その後追加API routing試験を含む12件PASS。実機待機/Web対象外。
+
+## DG-017 実Engine分析PASS
+- 更新session52982終了成功、LROdone。verify_engine session88963 PASS、架空learning-only aligned/必須3Tool/evidence valid、invalid token/別owner/旧世代拒否、2一時Authと内容cleanuptrue。engine-smoke.json。
+- 次はEngineログ/traceでtoken・原文非出力を確認し、Cloud Run engine環境設定でbuild/deploy→公開APIとAndroid架空QA。現公開00010-gth adkのまま、remoteコードはローカルに接続済み。実機待機/Web対象外。

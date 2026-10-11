@@ -15,6 +15,7 @@ def main():
         "auth", "print-access-token", "--account=atomic1017@gmail.com"], capture_output=True, text=True, check=True).stdout.strip()
     base = "https://dopaguard-api-463106527119.asia-northeast1.run.app"
     token = None
+    other_token = None
     evidence = {"status": "failed", "data_origin": "sample", "resource_name": resource}
     def identity(action, payload):
         response = requests.post("https://identitytoolkit.googleapis.com/v1/accounts:" + action,
@@ -25,16 +26,18 @@ def main():
         response = requests.request(method, base + path, headers={"Authorization": "Bearer " + token}, json=body, timeout=30)
         response.raise_for_status()
         return response.json()
+    def query(user_token, sid, generation):
+        return requests.post("https://asia-northeast1-aiplatform.googleapis.com/v1/" + resource + ":query",
+            headers={"Authorization": "Bearer " + oauth}, timeout=90,
+            json={"class_method": "query", "input": {"firebase_token": user_token, "session_id": sid,
+                "analysis_id": "engine-sample-analysis", "expected_generation": generation}})
     try:
         token = identity("signUp", {"email": "engine-" + secrets.token_hex(12) + "@example.invalid",
             "password": secrets.token_urlsafe(32), "returnSecureToken": True})["idToken"]
         batch = sample_batch("learning-only").model_dump(mode="json")
         api("POST", "/v1/sessions:batch", batch)
         generation = api("GET", "/v1/user/generation")["generation"]
-        response = requests.post("https://asia-northeast1-aiplatform.googleapis.com/v1/" + resource + ":query",
-            headers={"Authorization": "Bearer " + oauth}, timeout=90,
-            json={"class_method": "query", "input": {"firebase_token": token, "session_id": batch["session_id"],
-                "analysis_id": "engine-sample-analysis", "expected_generation": generation}})
+        response = query(token, batch["session_id"], generation)
         if response.status_code != 200:
             evidence["http_status"] = response.status_code
             # Classify allowlisted diagnostics without saving provider bodies.
@@ -52,10 +55,22 @@ def main():
         assert result.data_origin == "sample" and result.user_confirmation_required
         names = {row["tool"] for row in output["trace"]}
         assert {"get_user_goals", "get_timeline", "get_click_events"} <= names
-        evidence.update(status="passed", goal_alignment=result.goal_alignment, tools=sorted(names), evidence_valid=True)
+        evidence.update(goal_alignment=result.goal_alignment, tools=sorted(names), evidence_valid=True)
+        assert query("fictional-invalid-token", batch["session_id"], generation).status_code == 400
+        other_token = identity("signUp", {"email": "engine-other-" + secrets.token_hex(12) + "@example.invalid",
+            "password": secrets.token_urlsafe(32), "returnSecureToken": True})["idToken"]
+        assert query(other_token, batch["session_id"], 0).status_code == 400
+        api("DELETE", "/v1/user/data")
+        stale = query(token, batch["session_id"], generation)
+        assert stale.status_code == 400 and "data changed before investigation" in stale.text
+        evidence.update(status="passed", boundary_checks=["invalid Firebase token rejected",
+            "other authenticated owner cannot investigate session", "stale generation rejected before model"])
     except Exception as error:
         evidence["error_type"] = type(error).__name__
     finally:
+        if other_token:
+            identity("delete", {"idToken": other_token})
+            evidence["other_account_cleaned"] = True
         if token:
             api("DELETE", "/v1/user/data")
             assert api("GET", "/v1/sessions") == []

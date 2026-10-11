@@ -1,12 +1,19 @@
 {
-  "status": "failed",
+  "status": "passed",
   "data_origin": "sample",
   "resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656",
-  "http_status": 400,
-  "diagnostic_matches": [
-    "event loop",
-    "asyncio"
+  "goal_alignment": "aligned",
+  "tools": [
+    "get_click_events",
+    "get_timeline",
+    "get_user_goals"
   ],
-  "error_type": "RuntimeError",
+  "evidence_valid": true,
+  "boundary_checks": [
+    "invalid Firebase token rejected",
+    "other authenticated owner cannot investigate session",
+    "stale generation rejected before model"
+  ],
+  "other_account_cleaned": true,
   "temporary_account_cleaned": true
 }

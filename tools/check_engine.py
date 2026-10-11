@@ -20,7 +20,7 @@ def main():
             error_message=operation["error"].get("message"))
     elif state["done"]:
         state.update(status="deployed", resource_name=recorded["candidate_resource_name"])
-    else: state["status"] = "creating"
+    else: state["status"] = recorded.get("status_at_recording", "creating")
     (root / "artifacts/cloud/engine-operation-status.json").write_text(json.dumps(state, indent=2), encoding="utf-8")
     print(json.dumps(state))
 

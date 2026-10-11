@@ -1,5 +1,5 @@
 {
-  "status": "updating",
+  "status": "deployed",
   "service_account": "dopaguard-engine@dopadopa.iam.gserviceaccount.com",
   "location": "asia-northeast1",
   "telemetry_enabled": false,
