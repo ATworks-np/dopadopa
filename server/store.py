@@ -2,6 +2,7 @@
 from copy import deepcopy
 from hashlib import sha256
 from threading import RLock
+from time import time
 
 class ConflictError(ValueError): pass
 
@@ -85,24 +86,39 @@ class FirestoreStore:
         @firestore.transactional
         def begin(transaction):
             state = owner.get(transaction=transaction).to_dict() or {}
-            if state.get("deleting", False) and not state.get("deletion_failed", False):
+            if (state.get("deleting", False) and not state.get("deletion_failed", False)
+                    and state.get("deletion_lease_until", 0) > time()):
                 raise ConflictError("data deletion in progress")
             generation = state.get("generation", 0) + 1
-            transaction.set(owner, {"generation": generation, "deleting": True, "deletion_failed": False})
+            transaction.set(owner, {"generation": generation, "deleting": True,
+                "deletion_failed": False, "deletion_lease_until": time() + 120})
             return generation
         generation = begin(self.db.transaction())
         # A failed delete raises: never claim partial deletion is complete.
         # All writers read the same owner document transactionally, including other instances.
         try:
             for kind in ("feedback", "analyses", "sessions", "goals", "consents"):
-                for doc in self.collection(uid, kind).stream(timeout=10): doc.reference.delete(timeout=10)
+                for doc in self.collection(uid, kind).stream(timeout=10):
+                    @firestore.transactional
+                    def remove(transaction):
+                        state = owner.get(transaction=transaction).to_dict() or {}
+                        if state.get("generation") != generation or not state.get("deleting"):
+                            raise ConflictError("deletion superseded")
+                        transaction.update(owner, {"deletion_lease_until": time() + 120})
+                        transaction.delete(doc.reference)
+                    remove(self.db.transaction())
         except Exception:
             # Keep writes disabled, while allowing an explicit deletion retry.
-            owner.update({"deletion_failed": True}, timeout=10)
+            @firestore.transactional
+            def fail(transaction):
+                state = owner.get(transaction=transaction).to_dict() or {}
+                if state.get("generation") == generation:
+                    transaction.update(owner, {"deletion_failed": True})
+            fail(self.db.transaction())
             raise
         @firestore.transactional
         def finish(transaction):
             state = owner.get(transaction=transaction).to_dict() or {}
             if state.get("generation") == generation:
-                transaction.update(owner, {"deleting": False})
+                transaction.update(owner, {"deleting": False, "deletion_lease_until": 0})
         finish(self.db.transaction())

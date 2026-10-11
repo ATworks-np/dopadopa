@@ -3,6 +3,8 @@ import json
 import subprocess
 from pathlib import Path
 from uuid import uuid4
+from time import time
+from unittest.mock import patch
 from google.oauth2.credentials import Credentials
 from google.cloud import firestore
 from server.store import FirestoreStore, ConflictError
@@ -36,6 +38,25 @@ def main():
         else: raise AssertionError("stale write accepted")
         store.put(owner, "sessions", "new", value, expected_generation=store.generation(owner))
         checks.append("new generation permits registration")
+        # Simulate a process that died without setting deletion_failed.
+        store.owner_ref(owner).update({"deleting": True, "deletion_failed": False,
+            "deletion_lease_until": time() - 1}, timeout=10)
+        store.delete_all(owner)
+        assert store.list(owner, "sessions") == []
+        checks.append("expired crashed deletion recovered")
+        store.put(owner, "sessions", "failure-fixture", value, expected_generation=store.generation(owner))
+        with patch.object(store, "collection", side_effect=RuntimeError("fictional deletion transport failure")):
+            try: store.delete_all(owner)
+            except RuntimeError: pass
+            else: raise AssertionError("deletion failure hidden")
+        state = store.owner_ref(owner).get(timeout=10).to_dict()
+        assert state["deleting"] and state["deletion_failed"]
+        try: store.generation(owner)
+        except ConflictError: pass
+        else: raise AssertionError("write generation exposed during failed deletion")
+        store.delete_all(owner)
+        assert store.list(owner, "sessions") == []
+        checks.append("failed deletion keeps writes disabled and retry completes")
     finally:
         store.delete_all(owner)
         store.owner_ref(owner).delete(timeout=10)

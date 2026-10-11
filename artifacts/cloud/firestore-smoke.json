@@ -6,7 +6,9 @@
     "other owner cannot read record",
     "immutable conflict rejected",
     "post-deletion stale write rejected",
-    "new generation permits registration"
+    "new generation permits registration",
+    "expired crashed deletion recovered",
+    "failed deletion keeps writes disabled and retry completes"
   ],
   "cleaned_up": true
 }

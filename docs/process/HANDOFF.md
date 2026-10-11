@@ -185,3 +185,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 ## 2026-10-11 実機テスト待機のユーザー指示
 - ユーザーが『実機テストはまってください』と指定。再開指示まで実Android端末へのインストール・YouTube収集・実機E2Eは実施しない。エミュレータ/架空データ/クラウド開発は継続可能。
 - 対応履歴は本ファイル、RISKS_AND_DECISIONS、各チケット、artifactsの検証証拠に記録。Git導入前の変更は6205566の初回コミットに集約。会話全文、全コマンドの生ログ、保存していないブラウザ画像は収録していない。秘密情報、ローカル生成物、添付zipは除外。
+
+## DG-008 クラウド削除復帰修正
+- Firestore削除に120秒leaseと各削除transaction世代確認を追加。プロセス中断後の期限切れ再試行、旧workerの新世代削除/失敗状態更新阻止。server41件PASS。実Firestoreの架空fixtureで中断/障害復帰PASS、cleanuptrue。
+- Build82a98971-4324-4d9c-8ed5-3d913ffa5221開始。次は同じbuildの状態確認→SUCCESSならCloud Run配置→削除/同期API確認。現公開00009-jd9は旧コード。
+- 実機はユーザー指示で待機。WebはMVP対象外。Agent Engine、同期上限、Android実機E2E、提出物は未完了。
