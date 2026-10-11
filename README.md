@@ -3,6 +3,8 @@
 AndroidのYouTube操作を観測し、Geminiが根拠イベント付きの行動仮説を提示するP0 MVP。
 開発指示・要件の正本は [docs/README.md](docs/README.md)。
 
+別端末で再開する場合は [再開・引き継ぎ資料](docs/process/RESUME_ON_ANOTHER_MACHINE.md) から読む。実機テストは保留、今後エミュレータは使用しない。
+
 2026-10-11のスコープ変更: WebデモはMVP対象外。MVPはAndroid実機収集→クラウド分析→根拠表示→本人訂正（AC-01〜06）を中心に検証する。既存Webデモは参考成果として保持する。
 
 ## Android観測プロトタイプ（DG-001〜007）
