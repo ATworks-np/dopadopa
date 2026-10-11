@@ -1,7 +1,8 @@
 {
-  "status": "creating",
+  "status": "deployed",
   "service_account": "dopaguard-engine@dopadopa.iam.gserviceaccount.com",
   "location": "asia-northeast1",
   "telemetry_enabled": false,
-  "verified_inference": false
+  "verified_inference": false,
+  "resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656"
 }

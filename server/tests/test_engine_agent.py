@@ -15,7 +15,7 @@ class EngineBoundaryTest(unittest.TestCase):
              patch("server.engine_agent.AdkBehaviorRunner") as runner:
             runner.return_value.run.return_value = (result, [])
             self.assertEqual({"result": {"sample": True}, "trace": []},
-                DopaGuardEngineAgent().query("fictional-token", "sample-session", "sample-analysis", 7))
+                DopaGuardEngineAgent().query("fictional-token", "sample-session", "sample-analysis", 7.0))
             auth.assert_called_once_with("Bearer fictional-token")
             runner.return_value.run.assert_called_once_with("verified-owner", "sample-session", "sample-analysis")
             store.db.close.assert_called_once()
@@ -36,7 +36,7 @@ class EngineBoundaryTest(unittest.TestCase):
 
     def test_invalid_arguments_rejected_before_authentication(self):
         with patch("server.engine_agent.authenticated_user") as auth:
-            for sid, generation in [("../other", 0), ("s", -1), ("s", True)]:
+            for sid, generation in [("../other", 0), ("s", -1), ("s", True), ("s", 0.5), ("s", float("nan")), ("s", 2**53)]:
                 with self.assertRaises(ValueError):
                     DopaGuardEngineAgent().query("fictional-token", sid, "a", generation)
             auth.assert_not_called()

@@ -20,8 +20,11 @@ class DopaGuardEngineAgent:
         for value in (session_id, analysis_id):
             if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", value):
                 raise ValueError("invalid ID")
-        if type(expected_generation) is not int or expected_generation < 0:
+        # Protobuf Struct serializes JSON numbers as doubles at the RPC boundary.
+        if (type(expected_generation) not in (int, float) or not 0 <= expected_generation <= 2**53 - 1
+                or expected_generation != int(expected_generation)):
             raise ValueError("invalid generation")
+        expected_generation = int(expected_generation)
         uid = authenticated_user("Bearer " + firebase_token)
         store = FirestoreStore(os.environ["GOOGLE_CLOUD_PROJECT"])
         try:

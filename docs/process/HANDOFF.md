@@ -220,3 +220,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - 専用SAと非公開staging bucket作成済み。tools.deploy_engineでatomic1017 credentials固定、telemetry falseを設定。ADC期限切れ・予約env拒否を修正。入口3件PASS。
 - 生存session7660でcreate進行中（最後のpollは出力なし、非終端）。LRO projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656/operations/21003008552730624。engine-operation.jsonに保存。次は同じhandle/LROを確認、成功なら実sample queryとログ検証/Cloud Run remote連携。再createしない。
 - 現Cloud Run00010-gth adkは維持。Engine推論未確認、実機待機/Web対象外。
+
+## DG-017 Engine配置完了、世代型修正は未配置
+- Engine8372512764677062656作成成功、session7660終端。API LRO doneをcheck_engineで確認。
+- verify_engineの初回実queryは400/invalid generation、架空Authとクラウド内容cleanuptrue。Proto Structの整数がdoubleになる境界に対応、安全な整数floatを受理・小数/NaN/bool拒否、入口3件PASS。修正はローカルのみ。
+- 次は同じEngine resourceをSDKupdate（新create禁止）→sample query/認可・ログ確認→Cloud Run remote連携。実機待機/Web対象外。
