@@ -4,14 +4,34 @@
   "checks": [
     "Firebase email/password signup",
     "health and unauthenticated/invalid token rejection",
-    "real Firebase token owner isolation and sample provenance"
+    "real Firebase token owner isolation and sample provenance",
+    "Cloud Run ADK/Vertex analysis and other owner rejection",
+    "explicit correction saved and read back",
+    "owner data deletion verified",
+    "old and missing generation rejected after deletion; explicit current generation sync accepted"
   ],
-  "analysis_status": "failed",
-  "trace": [],
-  "status": "failed",
-  "error_type": "RuntimeError",
+  "analysis_status": "completed",
+  "trace": [
+    {
+      "tool": "get_user_goals",
+      "elapsed_ms": 36,
+      "count": 1
+    },
+    {
+      "tool": "get_timeline",
+      "count": 2,
+      "elapsed_ms": 43
+    },
+    {
+      "tool": "get_click_events",
+      "elapsed_ms": 62,
+      "count": 2
+    }
+  ],
+  "status": "passed",
   "temporary_accounts_cleaned": [
     true,
     true
-  ]
+  ],
+  "target": "https://dopaguard-api-463106527119.asia-northeast1.run.app"
 }

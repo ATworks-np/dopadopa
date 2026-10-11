@@ -270,3 +270,9 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - verify_engine_logsの原文検出対象をlearning-only/learning-shorts/unobservableの3シナリオへ拡張。
 - 最新直接検証開始2026-10-11T07:46:17.696424+00:00以降のEngineログ132件、全ページ監査PASS。原文/JWTパターンなし、telemetry disabled/content captureなし。engine-log-audit-current.jsonを更新。過去の漏出記録は保持。将来の全経路非出力を保証する証拠ではない。
 - 次はQA候補00013-hexの通常traffic切替と公開API・Androidエミュレータ連携確認。実機試験は引き続き保留、Web対象外。
+
+## DG-017 公開Engine切替
+- Cloud Run現在配置をCLIで確認後、00013-hexへ通常traffic100%切替成功。
+- 公開URLのverify_cloud_api PASS。Engine経由分析completed/必須3Tool、本人認証/別owner拒否、訂正、削除、旧世代拒否、現世代同期、一時Auth2cleanuptrue。cloud-api-smoke.json更新。
+- Androidエミュレータ限定cloudIntegration試験開始。初回JDK指定パス不在で起動前終了、実在するユーザー配下Android Studio jbrへ訂正し再実行。実機テストは行わない。
+- 再実行session8119は生存、Pixel_Tablet Android15で1件開始/0 skipped/0 failed、まだ0/1完了。次は同じsessionをpollし終端とXMLを確認する。再起動しない。
