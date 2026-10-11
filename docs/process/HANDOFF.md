@@ -253,3 +253,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - Engine更新終了、sample分析/安全拒否/cleanup PASS。修正後ログ17entriesで原文/JWTなし。engine-log-audit-current.json、過去検出記録保持。
 - API Build801c1ce3 SUCCESS、00011-m59 deploy成功（session40728）。公開Engine経由分析はfailed/trace0、session34244終了/一時Auth2cleanuptrue。engine-cloudrun-failure.json。
 - update-traffic終了成功、現在00010-gth ADKが100%。Engine切替未完了。次はremote callerのサービス認証・transport・output検証失敗の安全診断、修正して再検証。実機待機/Web対象外。README/cloud environmentを現在状態と履歴に整備、docs4件/22tickets validate PASS。
+
+## DG-017 接続診断版ビルド
+- Engine直接learning-shorts PASS/cleanuptrue、IAMuserロールにreasoningEngines.queryを確認。Cloud Run接続失敗原因は未特定。
+- app/remoteに機密なしfailure_stage許可定数ログ。server48件PASS。Build5c63bde4-a85d-4efd-9a71-53c1cd52580e開始。次は同build確認→診断版no-traffic/tagでQA→ログstage取得、原因修正。現公開00010-gth100%。
+- 実機待機/Web対象外。

@@ -1,5 +1,6 @@
 """Real Agent Engine query with disposable Firebase identity and fictional events."""
 import json
+import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 import secrets
@@ -9,6 +10,9 @@ from server.samples import sample_batch
 from server.models import Analysis, Event
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--scenario", choices=["learning-only", "learning-shorts", "unobservable"], default="learning-only")
+    args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     key = json.loads((root / "artifacts/cloud/firebase-web-config.json").read_text())["apiKey"]
     deployment = json.loads((root / "artifacts/cloud/engine-operation-status.json").read_text())
@@ -21,7 +25,7 @@ def main():
     token = None
     other_token = None
     evidence = {"status": "failed", "data_origin": "sample", "resource_name": resource,
-        "started_at": datetime.now(timezone.utc).isoformat()}
+        "started_at": datetime.now(timezone.utc).isoformat(), "scenario": args.scenario}
     def identity(action, payload):
         response = requests.post("https://identitytoolkit.googleapis.com/v1/accounts:" + action,
             params={"key": key}, json=payload, timeout=30)
@@ -39,7 +43,7 @@ def main():
     try:
         token = identity("signUp", {"email": "engine-" + secrets.token_hex(12) + "@example.invalid",
             "password": secrets.token_urlsafe(32), "returnSecureToken": True})["idToken"]
-        batch = sample_batch("learning-only").model_dump(mode="json")
+        batch = sample_batch(args.scenario).model_dump(mode="json")
         api("POST", "/v1/sessions:batch", batch)
         generation = api("GET", "/v1/user/generation")["generation"]
         response = query(token, batch["session_id"], generation)
@@ -55,6 +59,9 @@ def main():
                 if label in response.text]
             raise RuntimeError("engine query failed")
         output = response.json()["output"]
+        if "error" in output:
+            evidence["engine_error"] = output["error"] if output["error"] in {"analysis_unavailable", "record_unavailable", "generation_conflict"} else "unknown"
+            raise RuntimeError("engine returned failure")
         result = Analysis.model_validate(output["result"])
         result.validate_evidence([Event.model_validate(row) for row in batch["events"]])
         assert result.data_origin == "sample" and result.user_confirmation_required

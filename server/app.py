@@ -131,6 +131,12 @@ def analyze(body: AnalyzeInput, uid=Depends(authenticated_user), store=Depends(g
         record.update(status="insufficient_data" if result.goal_alignment == "unknown" and not result.segments else "completed", result=result.model_dump(mode="json"), trace=trace)
     except Exception:
         record.update(status="failed", error="analysis unavailable; retry later")
+        # No exception messages, request arguments, IDs, or tokens in diagnostics.
+        import logging
+        stage = getattr(locals().get("runner"), "failure_stage", "local_runner")
+        allowed = {"configuration", "service_credentials", "engine_transport", "engine_http_rejection",
+            "engine_output", "result_validation", "generation_validation", "trace_validation", "local_runner"}
+        logging.getLogger("dopaguard").warning("analysis_failure stage=%s", stage if isinstance(stage, str) and stage in allowed else "unknown")
         record["trace"] = getattr(locals().get("runner"), "trace", [])
     store.put(uid, "analyses", aid, record, expected_generation=generation)
     return record
