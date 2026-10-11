@@ -1,0 +1,10 @@
+*
+!server/
+!server/**
+!docs/
+!docs/samples/
+!docs/samples/**
+!cloudbuild.yaml
+!.dockerignore
+**/__pycache__/**
+**/.env*

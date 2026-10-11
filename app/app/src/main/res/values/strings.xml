@@ -1,0 +1,4 @@
+<resources>
+    <string name="collector_description">YouTubeの操作と取得可能なクリック文言を端末内で記録します。入力欄・認証・機密UIは除外します。クラウド送信は別途同意が必要です。</string>
+    <string name="app_name">dopadopa</string>
+</resources>

@@ -1,0 +1,52 @@
+{
+  "session_id": "sample-session-001",
+  "app_id": "youtube",
+  "data_origin": "sample",
+  "user_goal": "Androidアプリ開発の調査を進めたい",
+  "events": [
+    {
+      "event_id": "e1",
+      "session_id": "sample-session-001",
+      "app_id": "youtube",
+      "timestamp": "2026-10-11T21:00:00+09:00",
+      "event_type": "CLICK",
+      "text": "Android開発入門",
+      "text_status": "available",
+      "source": "clicked_node",
+      "observability": "direct"
+    },
+    {
+      "event_id": "e2",
+      "session_id": "sample-session-001",
+      "app_id": "youtube",
+      "timestamp": "2026-10-11T21:08:20+09:00",
+      "event_type": "CLICK",
+      "text": "Kotlin Coroutine解説",
+      "text_status": "available",
+      "source": "parent_context",
+      "observability": "inferred"
+    },
+    {
+      "event_id": "e3",
+      "session_id": "sample-session-001",
+      "app_id": "youtube",
+      "timestamp": "2026-10-11T21:17:00+09:00",
+      "event_type": "CLICK",
+      "text": "ショート",
+      "text_status": "available",
+      "source": "clicked_node",
+      "observability": "direct"
+    },
+    {
+      "event_id": "e4",
+      "session_id": "sample-session-001",
+      "app_id": "youtube",
+      "timestamp": "2026-10-11T21:20:00+09:00",
+      "event_type": "SCROLL",
+      "text": null,
+      "text_status": "missing",
+      "source": "none",
+      "observability": "unavailable"
+    }
+  ]
+}

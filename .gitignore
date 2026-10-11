@@ -1,0 +1,8 @@
+.codex-remote-attachments/
+.venv/
+__pycache__/
+*.pyc
+.env
+firebase-debug.log
+artifacts/private/
+app/emulator-*.log

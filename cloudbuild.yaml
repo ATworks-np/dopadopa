@@ -1,0 +1,6 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'server/Dockerfile', '-t', 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/dopaguard/api:mvp', '.']
+images:
+  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/dopaguard/api:mvp
+timeout: 1200s

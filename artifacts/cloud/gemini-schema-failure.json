@@ -1,0 +1,160 @@
+{
+  "project": "dopadopa",
+  "model": "gemini-2.5-flash",
+  "data_origin": "sample",
+  "records": [
+    {
+      "scenario": "learning-shorts",
+      "status": "failed",
+      "error_type": "ValueError",
+      "reason": "provider or schema failure",
+      "diagnostic": "Literal values must be strings.",
+      "frames": [
+        {
+          "file": "models.py",
+          "line": 1430,
+          "function": "_GenerateContentConfig_to_vertex"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 897,
+          "function": "t_schema"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 811,
+          "function": "process_schema"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 778,
+          "function": "_recurse"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 806,
+          "function": "process_schema"
+        }
+      ],
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 4,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 3,
+          "elapsed_ms": 0
+        }
+      ]
+    },
+    {
+      "scenario": "learning-only",
+      "status": "failed",
+      "error_type": "ValueError",
+      "reason": "provider or schema failure",
+      "diagnostic": "Literal values must be strings.",
+      "frames": [
+        {
+          "file": "models.py",
+          "line": 1430,
+          "function": "_GenerateContentConfig_to_vertex"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 897,
+          "function": "t_schema"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 811,
+          "function": "process_schema"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 778,
+          "function": "_recurse"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 806,
+          "function": "process_schema"
+        }
+      ],
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 2,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 2,
+          "elapsed_ms": 0
+        }
+      ]
+    },
+    {
+      "scenario": "unobservable",
+      "status": "failed",
+      "error_type": "ValueError",
+      "reason": "provider or schema failure",
+      "diagnostic": "Literal values must be strings.",
+      "frames": [
+        {
+          "file": "models.py",
+          "line": 1430,
+          "function": "_GenerateContentConfig_to_vertex"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 897,
+          "function": "t_schema"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 811,
+          "function": "process_schema"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 778,
+          "function": "_recurse"
+        },
+        {
+          "file": "_transformers.py",
+          "line": 806,
+          "function": "process_schema"
+        }
+      ],
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 4,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 3,
+          "elapsed_ms": 0
+        }
+      ]
+    }
+  ]
+}

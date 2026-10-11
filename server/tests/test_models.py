@@ -1,0 +1,34 @@
+import unittest
+from pydantic import ValidationError
+from server.models import Event, SessionBatch, Analysis
+
+def event(**changes):
+    value = dict(event_id="e1", session_id="s1", app_id="any-app", package_name="org.example",
+        timestamp="2026-10-11T10:00:00+09:00", event_type="CLICK", text="Kotlin",
+        text_status="available", source="clicked_node", observability="direct", data_origin="sample", consent_revision="v1")
+    return Event.model_validate(value | changes)
+
+def analysis(**changes):
+    return Analysis.model_validate(dict(analysis_id="a1", session_id="s1", segments=[], transitions=[],
+        goal_alignment="unknown", uncertainty="意図は不明", user_confirmation_required=True, data_origin="sample") | changes)
+
+class ContractTest(unittest.TestCase):
+    def test_redacted_cannot_retain_text(self):
+        with self.assertRaises(ValidationError): event(text_status="redacted")
+    def test_timezone_required(self):
+        with self.assertRaises(ValidationError): event(timestamp="2026-10-11T10:00:00")
+    def test_consent_required(self):
+        with self.assertRaises(ValidationError): SessionBatch(session_id="s1", user_goal="Learn", cloud_consent=False, consent_revision="v1", events=[event()])
+    def test_origin_cannot_mix(self):
+        with self.assertRaises(ValidationError): SessionBatch(session_id="s1", user_goal="Learn", cloud_consent=True, consent_revision="v1", events=[event(), event(event_id="e2", data_origin="real")])
+    def test_fabricated_evidence_rejected(self):
+        a = analysis(transitions=[dict(at_event_id="e1", hypothesis="変化の可能性", evidence_ids=["fake"])])
+        with self.assertRaises(ValueError): a.validate_evidence([event()])
+    def test_insufficient_data_unknown(self):
+        missing = event(text=None, text_status="missing", source="none", observability="unavailable")
+        self.assertEqual("unknown", analysis().validate_evidence([missing]).goal_alignment)
+        with self.assertRaises(ValueError): analysis(goal_alignment="aligned").validate_evidence([missing])
+    def test_provenance_mismatch(self):
+        with self.assertRaises(ValueError): analysis(data_origin="real").validate_evidence([event()])
+
+if __name__ == "__main__": unittest.main()

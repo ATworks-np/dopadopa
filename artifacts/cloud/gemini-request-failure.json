@@ -1,0 +1,160 @@
+{
+  "project": "dopadopa",
+  "model": "gemini-2.5-flash",
+  "data_origin": "sample",
+  "records": [
+    {
+      "scenario": "learning-shorts",
+      "status": "failed",
+      "error_type": "ClientError",
+      "reason": "provider or schema failure",
+      "diagnostic": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Request contains an invalid argument.', 'status': 'INVALID_ARGUMENT'}}",
+      "frames": [
+        {
+          "file": "_base.py",
+          "line": 401,
+          "function": "__get_result"
+        },
+        {
+          "file": "__init__.py",
+          "line": 116,
+          "function": "__call__"
+        },
+        {
+          "file": "_api_client.py",
+          "line": 1664,
+          "function": "_async_request_once"
+        },
+        {
+          "file": "errors.py",
+          "line": 265,
+          "function": "raise_for_async_response"
+        },
+        {
+          "file": "errors.py",
+          "line": 287,
+          "function": "raise_error_async"
+        }
+      ],
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 4,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 3,
+          "elapsed_ms": 0
+        }
+      ]
+    },
+    {
+      "scenario": "learning-only",
+      "status": "failed",
+      "error_type": "ClientError",
+      "reason": "provider or schema failure",
+      "diagnostic": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Request contains an invalid argument.', 'status': 'INVALID_ARGUMENT'}}",
+      "frames": [
+        {
+          "file": "_base.py",
+          "line": 401,
+          "function": "__get_result"
+        },
+        {
+          "file": "__init__.py",
+          "line": 116,
+          "function": "__call__"
+        },
+        {
+          "file": "_api_client.py",
+          "line": 1664,
+          "function": "_async_request_once"
+        },
+        {
+          "file": "errors.py",
+          "line": 265,
+          "function": "raise_for_async_response"
+        },
+        {
+          "file": "errors.py",
+          "line": 287,
+          "function": "raise_error_async"
+        }
+      ],
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 2,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 2,
+          "elapsed_ms": 0
+        }
+      ]
+    },
+    {
+      "scenario": "unobservable",
+      "status": "failed",
+      "error_type": "ClientError",
+      "reason": "provider or schema failure",
+      "diagnostic": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Request contains an invalid argument.', 'status': 'INVALID_ARGUMENT'}}",
+      "frames": [
+        {
+          "file": "_base.py",
+          "line": 401,
+          "function": "__get_result"
+        },
+        {
+          "file": "__init__.py",
+          "line": 116,
+          "function": "__call__"
+        },
+        {
+          "file": "_api_client.py",
+          "line": 1664,
+          "function": "_async_request_once"
+        },
+        {
+          "file": "errors.py",
+          "line": 265,
+          "function": "raise_for_async_response"
+        },
+        {
+          "file": "errors.py",
+          "line": 287,
+          "function": "raise_error_async"
+        }
+      ],
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 4,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 3,
+          "elapsed_ms": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "verification": "saved provider responses revalidated, no new inference",
+  "source_sha256": "64ed63fca06cef4d0fc408f658e0d89c757f7982c2673cfbd63e0762388097c5",
+  "validator_sha256": "621c1e5941befcd5e867fd7cbeda7ee35f09be95afa722f1d95c1742d791b569",
+  "data_origin": "sample",
+  "results": [
+    {
+      "scenario": "learning-shorts",
+      "schema_and_evidence_valid": true,
+      "goal_alignment": "possibly_diverged",
+      "segments": 3,
+      "transitions": 0,
+      "user_confirmation_required": true
+    },
+    {
+      "scenario": "learning-only",
+      "schema_and_evidence_valid": true,
+      "goal_alignment": "aligned",
+      "segments": 2,
+      "transitions": 0,
+      "user_confirmation_required": true
+    },
+    {
+      "scenario": "unobservable",
+      "schema_and_evidence_valid": true,
+      "goal_alignment": "unknown",
+      "segments": 0,
+      "transitions": 0,
+      "user_confirmation_required": true
+    }
+  ],
+  "limitations": [
+    "Real YouTube collection not tested",
+    "Schema validity does not establish correctness of inferred intent"
+  ]
+}

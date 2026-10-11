@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "data_origin": "sample",
+  "checks": [
+    "old and omitted generation cannot restore deleted records on first arrival",
+    "explicit new generation registration and immutable replay accepted"
+  ],
+  "temporary_account_cleaned": true
+}

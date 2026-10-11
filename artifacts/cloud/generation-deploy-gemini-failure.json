@@ -1,0 +1,33 @@
+{
+  "project": "dopadopa",
+  "data_origin": "sample",
+  "checks": [
+    "Firebase email/password signup",
+    "health and unauthenticated/invalid token rejection",
+    "real Firebase token owner isolation and sample provenance"
+  ],
+  "analysis_status": "failed",
+  "trace": [
+    {
+      "tool": "get_user_goals",
+      "count": 1,
+      "elapsed_ms": 35
+    },
+    {
+      "tool": "get_timeline",
+      "count": 2,
+      "elapsed_ms": 22
+    },
+    {
+      "tool": "get_click_events",
+      "count": 2,
+      "elapsed_ms": 25
+    }
+  ],
+  "status": "failed",
+  "error_type": "RuntimeError",
+  "temporary_accounts_cleaned": [
+    true,
+    true
+  ]
+}

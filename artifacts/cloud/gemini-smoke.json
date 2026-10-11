@@ -1,0 +1,147 @@
+{
+  "project": "dopadopa",
+  "model": "gemini-2.5-flash",
+  "data_origin": "sample",
+  "records": [
+    {
+      "scenario": "learning-shorts",
+      "status": "completed",
+      "analysis": {
+        "analysis_id": "verify-learning-shorts",
+        "session_id": "sample-learning-shorts",
+        "segments": [
+          {
+            "from_event_id": "e1",
+            "to_event_id": "e1",
+            "topic": "Android開発入門の調査",
+            "intent_hypothesis": "Android開発の基礎知識の調査",
+            "evidence_ids": [
+              "e1"
+            ]
+          },
+          {
+            "from_event_id": "e2",
+            "to_event_id": "e2",
+            "topic": "Kotlin Coroutineの具体的な技術調査",
+            "intent_hypothesis": "Android開発におけるKotlin Coroutineの学習",
+            "evidence_ids": [
+              "e2"
+            ]
+          },
+          {
+            "from_event_id": "e3",
+            "to_event_id": "e3",
+            "topic": "ショート動画の閲覧",
+            "intent_hypothesis": "不明（休憩、別の情報収集、短尺コンテンツの利用など）",
+            "evidence_ids": [
+              "e3"
+            ]
+          }
+        ],
+        "transitions": [],
+        "goal_alignment": "possibly_diverged",
+        "uncertainty": "イベントe3の「ショート」クリックは、その内容とユーザーの目標「Androidアプリ開発の調査を進めたい」との関連性が不明です。このクリックが休憩、一般的なエンターテイメント、またはAndroid開発に関連する短尺コンテンツの閲覧であった可能性があり、ユーザーの意図を特定することが困難です。また、イベントe4のSCROLLイベントはテキスト情報が欠損しているため、スクロールされたコンテンツの具体的な内容を特定できず、このイベントの意図や文脈を分析することができません。",
+        "user_confirmation_required": true,
+        "data_origin": "sample"
+      },
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 4,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 3,
+          "elapsed_ms": 0
+        }
+      ]
+    },
+    {
+      "scenario": "learning-only",
+      "status": "completed",
+      "analysis": {
+        "analysis_id": "verify-learning-only",
+        "session_id": "sample-learning-only",
+        "segments": [
+          {
+            "from_event_id": "e1",
+            "to_event_id": "e1",
+            "topic": "Androidアプリ開発入門",
+            "intent_hypothesis": "Androidアプリ開発の基礎学習に関心を持った可能性があります。",
+            "evidence_ids": [
+              "e1"
+            ]
+          },
+          {
+            "from_event_id": "e2",
+            "to_event_id": "e2",
+            "topic": "Kotlin Coroutine",
+            "intent_hypothesis": "Androidアプリ開発における特定技術（Kotlin Coroutine）への深掘り学習に関心を持った可能性があります。",
+            "evidence_ids": [
+              "e2"
+            ]
+          }
+        ],
+        "transitions": [],
+        "goal_alignment": "aligned",
+        "uncertainty": "実際の動画視聴は確認されていません。クリックのみが観測された事実に基づいています。ユーザーの意図、関心、および学習内容は仮説に過ぎません。",
+        "user_confirmation_required": true,
+        "data_origin": "sample"
+      },
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 2,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 2,
+          "elapsed_ms": 0
+        }
+      ]
+    },
+    {
+      "scenario": "unobservable",
+      "status": "completed",
+      "analysis": {
+        "analysis_id": "verify-unobservable",
+        "session_id": "sample-unobservable",
+        "segments": [],
+        "transitions": [],
+        "goal_alignment": "unknown",
+        "uncertainty": "観測されたイベントの具体的な内容が全く記録されていないため、利用者の実際の行動や意図について判断できる根拠がありません。",
+        "user_confirmation_required": true,
+        "data_origin": "sample"
+      },
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 4,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 3,
+          "elapsed_ms": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/healthz",
+    "status": 404
+  },
+  {
+    "path": "/v1/demo/sessions",
+    "status": 200
+  },
+  {
+    "path": "/v1/sessions",
+    "status": 401
+  }
+]

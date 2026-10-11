@@ -1,0 +1,39 @@
+{
+  "session_id": "sample-session-001",
+  "data_origin": "sample",
+  "segments": [
+    {
+      "from_event_id": "e1",
+      "to_event_id": "e2",
+      "topic": "Android開発",
+      "intent_hypothesis": "技術調査の可能性",
+      "evidence_ids": [
+        "e1",
+        "e2"
+      ]
+    },
+    {
+      "from_event_id": "e3",
+      "to_event_id": "e4",
+      "topic": "ショート閲覧",
+      "intent_hypothesis": "別の閲覧行動の可能性",
+      "evidence_ids": [
+        "e3",
+        "e4"
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "at_event_id": "e3",
+      "hypothesis": "技術調査から別の閲覧行動へ移行した可能性",
+      "evidence_ids": [
+        "e2",
+        "e3"
+      ]
+    }
+  ],
+  "goal_alignment": "possibly_diverged",
+  "uncertainty": "意図的な休憩か、実際に動画を視聴したかは分からない",
+  "user_confirmation_required": true
+}

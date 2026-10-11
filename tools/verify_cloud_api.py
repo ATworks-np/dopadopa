@@ -1,0 +1,84 @@
+"""Real Firebase/Cloud Run/Firestore/Vertex smoke test with temporary accounts."""
+import json
+import secrets
+from pathlib import Path
+import requests
+
+BASE = "https://dopaguard-api-463106527119.asia-northeast1.run.app"
+
+def main():
+    key = json.loads(Path("artifacts/cloud/firebase-web-config.json").read_text(encoding="utf-8"))["apiKey"]
+    tokens, checks = [], []
+    def identity(method, body):
+        response = requests.post("https://identitytoolkit.googleapis.com/v1/accounts:" + method,
+            params={"key": key}, json=body, timeout=30)
+        if not response.ok: raise RuntimeError(f"identity {method}: HTTP {response.status_code}")
+        return response.json()
+    def api(method, path, token=None, body=None, expected=200, generation=None):
+        headers = {"Authorization": "Bearer " + token} if token else {}
+        if generation is not None: headers['X-DopaGuard-Generation'] = str(generation)
+        response = requests.request(method, BASE + path,
+            headers=headers, json=body, timeout=65)
+        if response.status_code != expected: raise RuntimeError(f"API {path}: HTTP {response.status_code}, expected {expected}")
+        return response.json()
+    result = {"project": "dopadopa", "data_origin": "sample", "checks": checks}
+    try:
+        for _ in range(2):
+            account = identity("signUp", {"email": "smoke-" + secrets.token_hex(12) + "@example.invalid",
+                "password": secrets.token_urlsafe(32), "returnSecureToken": True})
+            tokens.append(account["idToken"])
+        checks.append("Firebase email/password signup")
+        api("GET", "/health")
+        api("GET", "/v1/sessions", expected=401)
+        api("GET", "/v1/sessions", "invalid-token", expected=401)
+        checks.append("health and unauthenticated/invalid token rejection")
+        old_generation = api('GET','/v1/user/generation',tokens[0])['generation']
+        imported = api("POST", "/v1/demo/sessions/learning-only/import", tokens[0], generation=old_generation)
+        assert imported["data_origin"] == "sample"
+        sid = imported["session_id"]
+        api("GET", "/v1/sessions/" + sid, tokens[1], expected=404)
+        checks.append("real Firebase token owner isolation and sample provenance")
+        analysis = api("POST", "/v1/analyses", tokens[0], {"session_id": sid})
+        result["analysis_status"] = analysis["status"]
+        result["trace"] = analysis["trace"]
+        if analysis["status"] not in {"completed", "insufficient_data"}:
+            raise RuntimeError("real cloud analysis failed")
+        assert analysis["result"]["data_origin"] == "sample"
+        assert analysis["result"]["user_confirmation_required"] is True
+        aid = analysis["analysis_id"]
+        api("GET", "/v1/analyses/" + aid, tokens[1], expected=404)
+        checks.append("Cloud Run ADK/Vertex analysis and other owner rejection")
+        saved = api("POST", "/v1/analyses/" + aid + "/feedback", tokens[0],
+            {"verdict": "incorrect", "corrected_intent": "架空サンプルの訂正検証"})
+        rows = api("GET", "/v1/analyses/" + aid + "/feedback", tokens[0])
+        assert any(row["feedback_id"] == saved["feedback_id"] for row in rows)
+        checks.append("explicit correction saved and read back")
+        api("DELETE", "/v1/user/data", tokens[0])
+        assert api("GET", "/v1/sessions", tokens[0]) == []
+        api("GET", "/v1/analyses/" + aid, tokens[0], expected=404)
+        checks.append("owner data deletion verified")
+        api('POST','/v1/demo/sessions/learning-only/import',tokens[0],expected=409,generation=old_generation)
+        api('POST','/v1/demo/sessions/learning-only/import',tokens[0],expected=409)
+        assert api('GET','/v1/sessions',tokens[0]) == []
+        current = api('GET','/v1/user/generation',tokens[0])['generation']
+        assert current > old_generation
+        api('POST','/v1/demo/sessions/learning-only/import',tokens[0],generation=current)
+        assert len(api('GET','/v1/sessions',tokens[0])) == 1
+        checks.append('old and missing generation rejected after deletion; explicit current generation sync accepted')
+        result["status"] = "passed"
+    except Exception as error:
+        result.update(status="failed", error_type=type(error).__name__)
+        print("Cloud smoke failed: " + type(error).__name__, flush=True)
+    finally:
+        cleanup = []
+        for token in tokens:
+            try:
+                api("DELETE", "/v1/user/data", token)
+                identity("delete", {"idToken": token})
+                cleanup.append(True)
+            except Exception: cleanup.append(False)
+        result["temporary_accounts_cleaned"] = cleanup
+        Path("artifacts/cloud/cloud-api-smoke.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(json.dumps(result, ensure_ascii=False))
+
+if __name__ == "__main__": main()

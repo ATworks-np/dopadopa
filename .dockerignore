@@ -1,0 +1,7 @@
+*
+!server/
+!server/**
+!docs/
+!docs/samples/
+!docs/samples/**
+**/__pycache__

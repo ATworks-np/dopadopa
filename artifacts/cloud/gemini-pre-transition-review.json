@@ -1,0 +1,163 @@
+{
+  "project": "dopadopa",
+  "model": "gemini-2.5-flash",
+  "data_origin": "sample",
+  "records": [
+    {
+      "scenario": "learning-shorts",
+      "status": "completed",
+      "analysis": {
+        "analysis_id": "verify-learning-shorts",
+        "session_id": "sample-learning-shorts",
+        "segments": [
+          {
+            "from_event_id": "e1",
+            "to_event_id": "e2",
+            "topic": "Androidアプリ開発",
+            "intent_hypothesis": "Androidアプリ開発に関する調査を進めている",
+            "evidence_ids": [
+              "e1",
+              "e2"
+            ]
+          },
+          {
+            "from_event_id": "e3",
+            "to_event_id": "e4",
+            "topic": "ショートコンテンツ視聴",
+            "intent_hypothesis": "気晴らしをしているか、別の種類の情報収集をしている可能性。",
+            "evidence_ids": [
+              "e3",
+              "e4"
+            ]
+          }
+        ],
+        "transitions": [
+          {
+            "at_event_id": "e3",
+            "hypothesis": "Android開発に関する調査から一時的に離脱した可能性、または別の関心事に移行した可能性。",
+            "evidence_ids": [
+              "e2",
+              "e3"
+            ]
+          }
+        ],
+        "goal_alignment": "unknown",
+        "uncertainty": "The transition to \"ショート\" (e3) and the unobserved scroll event (e4) make it unclear if the user continued their Android app development research or took a break/diverted their attention. The specific content of the \"ショート\" and the details of the scroll event are not available, limiting further interpretation.",
+        "user_confirmation_required": true,
+        "data_origin": "sample"
+      },
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 4,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_past_feedback",
+          "count": 0,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 3,
+          "elapsed_ms": 0
+        }
+      ]
+    },
+    {
+      "scenario": "learning-only",
+      "status": "completed",
+      "analysis": {
+        "analysis_id": "verify-learning-only",
+        "session_id": "sample-learning-only",
+        "segments": [
+          {
+            "from_event_id": "e1",
+            "to_event_id": "e1",
+            "topic": "Androidアプリ開発の初期調査",
+            "intent_hypothesis": "ユーザーはAndroidアプリ開発の初期調査を開始し、「Android開発入門」という動画コンテンツに関心を示した可能性があります。",
+            "evidence_ids": [
+              "e1"
+            ]
+          },
+          {
+            "from_event_id": "e2",
+            "to_event_id": "e2",
+            "topic": "Androidアプリ開発の深掘り調査（Kotlin Coroutine）",
+            "intent_hypothesis": "ユーザーはAndroidアプリ開発の調査を深掘りするために、「Kotlin Coroutine解説」というより専門的なトピックに興味を移した可能性があります。",
+            "evidence_ids": [
+              "e2"
+            ]
+          }
+        ],
+        "transitions": [
+          {
+            "at_event_id": "e1",
+            "hypothesis": "イベント e1 と e2 の間には約8分20秒の時間が経過しており、ユーザーはこの間、最初の動画を視聴したか、関連コンテンツを閲覧したか、あるいは休憩を取っていた可能性があります。",
+            "evidence_ids": [
+              "e1",
+              "e2"
+            ]
+          }
+        ],
+        "goal_alignment": "aligned",
+        "uncertainty": "イベントの観測方法: イベント e2 は inferred (推測)されており、parent_context (親コンテキスト) からの情報に基づいています。これは、直接的なクリックイベント (e1 のように direct および clicked_node からの観測) よりも、ユーザーの実際の操作内容に関する不確実性が存在します。\n動画視聴の有無と時間: クリックイベントはコンテンツへの関心を示しますが、実際に動画が視聴されたかどうか、また視聴された場合の具体的な時間や、コンテンツから得られた情報は、これらのイベントからは直接読み取れません。\n休憩の可能性: イベント間の時間差は、動画視聴以外にも、他のタスクへの切り替えや意図的な休憩など、さまざまな行動の可能性を示唆しています。\nセッションの完了度: 提示されたイベントのみでは、ユーザーが「Androidアプリ開発の調査を進めたい」という目標をどの程度達成できたか、あるいはセッションが完了したのかどうかは不明です。\nこれらの情報は、利用意図と転換点に関する仮説であり、不確実性が伴います。",
+        "user_confirmation_required": true,
+        "data_origin": "sample"
+      },
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 2,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 2,
+          "elapsed_ms": 0
+        }
+      ]
+    },
+    {
+      "scenario": "unobservable",
+      "status": "completed",
+      "analysis": {
+        "analysis_id": "verify-unobservable",
+        "session_id": "sample-unobservable",
+        "segments": [],
+        "transitions": [],
+        "goal_alignment": "unknown",
+        "uncertainty": "観測されたすべてのイベント（e1, e2, e3, e4）はYouTubeアプリ内での活動を示していますが、これらのイベントの具体的な内容（例：クリックしたボタンや動画のタイトル、スクロールで表示されたコンテンツ）が`observability: unavailable`および`text_status: missing`であるため不明です。このため、ユーザーの行動が「Androidアプリ開発の調査を進めたい」というゴールとどのように関連しているかを判断するための根拠となる情報が不足しています。したがって、ゴールへの合致度については「不明」とせざるを得ません。休憩の可能性も排除できません。",
+        "user_confirmation_required": true,
+        "data_origin": "sample"
+      },
+      "trace": [
+        {
+          "tool": "get_user_goals",
+          "count": 1,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_timeline",
+          "count": 4,
+          "elapsed_ms": 0
+        },
+        {
+          "tool": "get_click_events",
+          "count": 3,
+          "elapsed_ms": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "project": "dopadopa",
+  "email": {
+    "enabled": true,
+    "passwordRequired": true
+  }
+}

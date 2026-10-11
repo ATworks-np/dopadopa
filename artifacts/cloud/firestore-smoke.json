@@ -1,0 +1,12 @@
+{
+  "project": "dopadopa",
+  "data_origin": "sample",
+  "checks": [
+    "transactional registration and idempotent resend",
+    "other owner cannot read record",
+    "immutable conflict rejected",
+    "post-deletion stale write rejected",
+    "new generation permits registration"
+  ],
+  "cleaned_up": true
+}
