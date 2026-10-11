@@ -33,6 +33,7 @@ class RemoteEngineRunner:
                 content.extend(chunk)
                 if len(content) > 300_000: raise ValueError("engine response too large")
         output = json.loads(content)["output"]
+        if "error" in output: raise RuntimeError("engine analysis unavailable")
         result = Analysis.model_validate(output["result"])
         if result.session_id != session_id or result.analysis_id != analysis_id or result.data_origin != session["events"][0]["data_origin"]:
             raise ValueError("engine identity mismatch")

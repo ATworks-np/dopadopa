@@ -1,11 +1,20 @@
 import unittest
 import asyncio
+import io
+from contextlib import redirect_stderr, redirect_stdout
 from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 from server.engine_agent import DopaGuardEngineAgent
 from server.store import ConflictError
 
 class EngineBoundaryTest(unittest.TestCase):
+    def test_provider_error_returns_generic_envelope_without_printing_content(self):
+        stream = io.StringIO()
+        with patch.object(DopaGuardEngineAgent, "_investigate", side_effect=RuntimeError("fictional-sensitive-body")), \
+             redirect_stdout(stream), redirect_stderr(stream):
+            result = DopaGuardEngineAgent().query("fictional-token", "s", "a", 0)
+        self.assertEqual({"error": "analysis_unavailable"}, result)
+        self.assertEqual("", stream.getvalue())
     def test_identity_is_verified_inside_runtime_and_client_supplied_uid_is_not_accepted(self):
         store = MagicMock()
         store.generation.return_value = 7

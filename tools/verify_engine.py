@@ -1,5 +1,6 @@
 """Real Agent Engine query with disposable Firebase identity and fictional events."""
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 import secrets
 import subprocess
@@ -16,7 +17,8 @@ def main():
     base = "https://dopaguard-api-463106527119.asia-northeast1.run.app"
     token = None
     other_token = None
-    evidence = {"status": "failed", "data_origin": "sample", "resource_name": resource}
+    evidence = {"status": "failed", "data_origin": "sample", "resource_name": resource,
+        "started_at": datetime.now(timezone.utc).isoformat()}
     def identity(action, payload):
         response = requests.post("https://identitytoolkit.googleapis.com/v1/accounts:" + action,
             params={"key": key}, json=payload, timeout=30)
@@ -56,13 +58,15 @@ def main():
         names = {row["tool"] for row in output["trace"]}
         assert {"get_user_goals", "get_timeline", "get_click_events"} <= names
         evidence.update(goal_alignment=result.goal_alignment, tools=sorted(names), evidence_valid=True)
-        assert query("fictional-invalid-token", batch["session_id"], generation).status_code == 400
+        invalid = query("fictional-invalid-token", batch["session_id"], generation)
+        assert invalid.status_code == 200 and invalid.json()["output"] == {"error": "analysis_unavailable"}
         other_token = identity("signUp", {"email": "engine-other-" + secrets.token_hex(12) + "@example.invalid",
             "password": secrets.token_urlsafe(32), "returnSecureToken": True})["idToken"]
-        assert query(other_token, batch["session_id"], 0).status_code == 400
+        other = query(other_token, batch["session_id"], 0)
+        assert other.status_code == 200 and other.json()["output"] == {"error": "record_unavailable"}
         api("DELETE", "/v1/user/data")
         stale = query(token, batch["session_id"], generation)
-        assert stale.status_code == 400 and "data changed before investigation" in stale.text
+        assert stale.status_code == 200 and stale.json()["output"] == {"error": "generation_conflict"}
         evidence.update(status="passed", boundary_checks=["invalid Firebase token rejected",
             "other authenticated owner cannot investigate session", "stale generation rejected before model"])
     except Exception as error:

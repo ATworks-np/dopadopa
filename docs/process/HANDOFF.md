@@ -244,3 +244,7 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - Engine runtime stderr7件にsample内容/JWTパターン。全2805entriesチェック、telemetry falseでも例外経路が漏出。値は出力/ファイル保存せずカウントだけ。engine-log-audit.json。旧テストAuth削除済み。
 - query例外を機密なしerror envelopeへ変換する修正、入口3件PASS。未Engine更新。次はverify_engineの拒否判定をerror envelopeへ変更、更新後の時刻限定ログ監査。過去ログの削除なし、Cloud Run adk維持。
 - 実機待機/Web対象外。
+
+## DG-017 ログ対策配置・APIビルド進行中
+- 生存session60319は既存Engine更新LRO2127069153046036480、最後のpoll非終端。次は同じhandle確認→verify_engine→logs --since-smoke（伝播を待って再監査）。過去漏出7件の証拠は保持。
+- server48件PASS、例外出力空/error envelope確認。Cloud Build801c1ce3-b30f-47be-b4eb-b182a8c71388開始、現Cloud Run00010-gth adk維持。build成功とログ対策PASS後engine envでdeploy、API/Android架空QA。実機待機/Web対象外。

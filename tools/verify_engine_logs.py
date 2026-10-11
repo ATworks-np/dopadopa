@@ -1,5 +1,6 @@
 """Inspect runtime logs in memory; persist only counts and boolean findings."""
 import json
+import argparse
 from pathlib import Path
 import re
 import subprocess
@@ -7,8 +8,16 @@ import requests
 from server.samples import sample_batch
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--since-smoke", action="store_true")
+    args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     resource = json.loads((root / "artifacts/cloud/engine-deployment.json").read_text())["resource_name"]
+    since = None
+    if args.since_smoke:
+        smoke = json.loads((root / "artifacts/cloud/engine-smoke.json").read_text())
+        if smoke["status"] != "passed" or smoke["resource_name"] != resource: raise RuntimeError("matching smoke required")
+        since = smoke["started_at"]
     token = subprocess.run([r"C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
         "auth", "print-access-token", "--account=atomic1017@gmail.com"], capture_output=True, text=True, check=True).stdout.strip()
     headers = {"Authorization": "Bearer " + token}
@@ -21,6 +30,7 @@ def main():
             "filter": 'resource.type="aiplatform.googleapis.com/ReasoningEngine" AND resource.labels.reasoning_engine_id="' + resource.split('/')[-1] + '"',
             "pageSize": 1000}
         if cursor: body["pageToken"] = cursor
+        if since: body["filter"] += ' AND timestamp >= "' + since + '"'
         response = requests.post("https://logging.googleapis.com/v2/entries:list", headers=headers, json=body, timeout=30)
         response.raise_for_status()
         page = response.json()
@@ -45,9 +55,11 @@ def main():
         group = name + ":" + entry.get("severity", "DEFAULT")
         findings[group] = findings.get(group, 0) + 1
     evidence["finding_counts_by_log_and_severity"] = findings
+    evidence["since"] = since
     evidence["status"] = "passed" if (entries and not cursor and evidence["telemetry_disabled"] and evidence["content_capture_not_enabled"]
         and not evidence["sample_content_found"] and not evidence["jwt_pattern_found"]) else "inconclusive_or_failed"
-    (root / "artifacts/cloud/engine-log-audit.json").write_text(json.dumps(evidence, indent=2), encoding="utf-8")
+    filename = "engine-log-audit-current.json" if since else "engine-log-audit.json"
+    (root / "artifacts/cloud" / filename).write_text(json.dumps(evidence, indent=2), encoding="utf-8")
     print(json.dumps(evidence))
     if evidence["status"] != "passed": raise RuntimeError("Engine log audit not passed")
 
