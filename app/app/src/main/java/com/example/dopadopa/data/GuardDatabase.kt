@@ -59,6 +59,7 @@ interface GuardDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) fun saveAnalysis(value: BehaviorAnalysis)
     @Insert fun saveFeedback(value: BehaviorFeedback)
     @Query("SELECT * FROM sessions ORDER BY startedAt DESC LIMIT 100") fun sessions(): List<Session>
+    @Query("SELECT sessionId FROM sessions") fun sessionIds(): List<String>
     @Query("SELECT * FROM sessions WHERE endedAt IS NOT NULL ORDER BY startedAt LIMIT 1000") fun closedSessions(): List<Session>
     @Query("SELECT * FROM consents WHERE revision = :revision LIMIT 1") fun consent(revision: String): ConsentRecord?
     @Query("SELECT * FROM analyses WHERE sessionId = :sessionId AND ownerUid = :uid ORDER BY createdAt DESC LIMIT 1")

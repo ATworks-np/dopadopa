@@ -33,6 +33,7 @@ class TimelineRepository(private val context: Context) {
     }
 
     fun pollUsage(now: Long = System.currentTimeMillis()) = synchronized(PrivacyGate.lock) {
+        LocalRetention.prune(dao, context.getSharedPreferences("cloud_queue", Context.MODE_PRIVATE), now)
         if (!prepare() || !hasUsagePermission()) return@synchronized
         if (now <= cursor) return@synchronized
         val usage = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -55,8 +56,6 @@ class TimelineRepository(private val context: Context) {
         }
         cursor = now
         prefs.edit().putLong("last_usage_at", now).apply()
-        val before = now - 7L * 24 * 60 * 60 * 1000
-        dao.expireSessions(before); dao.expireAnalyses(before); dao.expireFeedback(before)
     }
 
     fun interaction(at: Long, type: String, text: TextObservation, expectedRevision: String) = synchronized(PrivacyGate.lock) {

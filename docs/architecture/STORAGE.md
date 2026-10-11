@@ -17,3 +17,6 @@
 sync_envelopesは本人UID/sessionのqueueKeyと同意revisionで最初の送信JSONを固定する。再送候補で上書きしない。機密を含み得るためアプリ専用DB内に保存し、SharedPreferences/ログ/バックアップへ原文を書かない。sessionsへのFK cascadeで7日保存期間と削除に連動する。クラウド/端末削除で固定データも消去する。v1→v2→v3 migrationを使用する。
 
 固定後に遅延して追加された観測は端末タイムラインへ残り、クラウドimmutableセッションへ混ぜない。「同期後の追加観測（端末のみ）」として件数を通知する。実転送中の再試行・遅延観測のクラウド試験は別途必要。
+
+## 同期キューの保持期限
+LocalRetentionは収集ポーリングの権限/同意チェック前と同期操作の認証チェック前に実行する。7日を超えるsession/analysis/feedbackを削除し、残存session IDに対応しないsent/retry/attemptメタデータも削除する。Room固定payloadはFK cascadeで連動する。アプリが動作していない間に自動削除する保証はない。

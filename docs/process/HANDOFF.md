@@ -177,3 +177,7 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 ## DG-008 固定再送 実クラウドQA
 - CloudSyncIntegrationTest追加: batch資格取得失敗後のRoom snapshot/retry、遅延イベント/ゴール変更、固定JSON再送、クラウド2件/端末3件、端末のみ件数1を実Cloud Run/Firebaseで確認。session18243 SUCCESS/1PASS/skip0、android-frozen-retry.xml。finally cleanup通過、実ログなし。
 - DG-008 in-progress維持。Webはユーザー指示によりMVP対象外。次は固定snapshotの再送前に遅延イベントが上限を超えた場合の扱い、キュー保持期限、削除障害復帰を点検。実機収集/E2E、Agent Engine、Android中心の提出素材も残る。
+
+## DG-008 保持期限の補完
+- LocalRetentionで7日Room削除と孤立同期メタデータ削除。poll同意/UsageStats確認前・sync認証確認前に接続。session65809終端SUCCESS、単体18件/保持期限instrumentation1件/assembleDebug PASS。android-retention.xml。架空DBのみ。
+- 次は固定再送前に遅延イベントが500件上限を超える場合、削除障害復帰、Agent Engine配置、実機収集/E2E、提出物。WebはMVP対象外、DG-008 in-progress。

@@ -31,6 +31,7 @@ class CloudRepository(context: Context,
             prefs.getString("cloud_owner", uid) == uid
 
     fun sync(): String {
+        synchronized(PrivacyGate.lock) { LocalRetention.prune(dao, queue) }
         val user = auth.currentUser ?: return "ログインしてください。"
         val revision = prefs.getString("consent_revision", "").orEmpty()
         if (!authorized(user.uid, revision)) return "クラウド同意またはデータの所有者を確認してください。"
