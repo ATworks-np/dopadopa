@@ -210,3 +210,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - Agent Engine追加配置をDG-017で管理。server/engine_agent.py query入口: runtime Firebase本人認可、client UIDなし、前後削除世代チェック、既存ADK、Firestore client finally close。入口試験3件追加/server44件PASS。
 - 現公開Cloud Run00010-gthはadkのまま、Engine未配置。次はpackage/専用IAM/tokenや原文のログ・tracing非出力設定を確認し配置、Cloud Run remote adapterと実QAを行う。
 - 実機待機/Web対象外維持。実ログ/新推論なし。
+
+## DG-017 配置パッケージ準備
+- tools.prepare_engine PASS。必要server7ファイルallowlist、cloudpickle stateless round-trip、source/lock hashesのengine-package.jsonを作成。private stagingはGit除外。
+- Engine未配置。次は専用SA/IAMとruntime payload/tokenログ非出力設定を確認しSDKcreate、resource記録、Cloud Run remote adapter、架空実推論とcleanup。現公開00010-gthはadk。
+- 実機待機/Web対象外継続。新規実ログ/推論なし。
