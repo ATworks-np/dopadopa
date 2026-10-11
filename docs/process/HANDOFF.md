@@ -323,3 +323,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - ADKに固定failure_stage（model_execution/model_deadline/result_validation）を記録し、Engine境界で機密なしerror envelopeへ変換。Cloud Runは3値だけ許可し、engine_接頭辞の固定分類をログへ出す。例外本文/原文/tokenなし。
 - 初回は例外型変更で既存試験7件が失敗したため、ADKの元の例外動作を維持しEngine境界だけ変換する形へ修正。サーバー49件PASS。
 - クラウド未反映。次は既存Engine --updateとCloud Run QA診断版のbuild/deploy、learning-shortsの内部段階確認。新Engine createしない。今回新推論/端末使用なし。
+
+## DG-017 内部診断の配置進行中
+- 既存Engine更新session48512生存、LRO1534845802046816256進行中。SDKのLRO出力をengine-operation.jsonへ記録。check_engine初回は旧LROを参照したため今回の完了証拠にはせず、最新LROへ訂正して再確認。
+- Cloud Build ffcaa333-732b-46b5-a5d9-e6dfc8e35abbはWORKING。初回--tag/--config併用は引数エラーで投入なし、既存cloudbuild.yaml指定で投入成功。
+- 次は同じEngine session/LROとBuild状態を確認する。新update/buildを重複投入しない。成功後に診断版Cloud Runをno-traffic/QA tagで配置しlearning-shorts再検証。通常公開00013-hexは維持、端末操作なし。
