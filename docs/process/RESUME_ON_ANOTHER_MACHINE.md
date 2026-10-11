@@ -64,7 +64,7 @@ gcloud auth list
 gcloud run services describe dopaguard-api --project=dopadopa --region=asia-northeast1 --format=json
 ```
 
-クラウド状態は上記コマンドで再確認し、記録だけから再配置しない。toolsのクラウド検証スクリプトには旧Windowsのgcloud.cmd絶対パスが残る。新端末の実在するCLIパスに合わせて修正してから使う。アクセストークンは表示・保存しない。旧Firebase CLIの保存認証は期限切れだったため、必要なら本人が再ログインする。
+クラウド状態は上記コマンドで再確認し、記録だけから再配置しない。toolsのクラウド検証スクリプトはPATHからgcloud.cmdまたはgcloudを取得する。Google Cloud SDKのbinをPATHへ追加し、リポジトリルートからpython -m tools.<モジュール名>で実行する。旧PC固有のCLIパス編集は不要。アクセストークンは表示・保存しない。旧Firebase CLIの保存認証は期限切れだったため、必要なら本人が再ログインする。
 
 既存Engineへはtools.deploy_engine --updateを使う。新createで重複リソースを作らない。artifacts/privateのpackageはGit対象外で、tools.prepare_engineから再生成する。クラウド検証は一時Authと架空sampleを使うが実リソース・課金を利用する。
 

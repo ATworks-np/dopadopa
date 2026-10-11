@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 import subprocess
+from tools.cloud_cli import gcloud_executable
 import vertexai
 from google.oauth2.credentials import Credentials
 from vertexai import agent_engines
@@ -25,7 +26,7 @@ def main():
     if args.update and not previous.get("resource_name"):
         raise RuntimeError("update requires recorded existing resource")
     prepare()
-    token = subprocess.run([r"C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
+    token = subprocess.run([gcloud_executable(),
         "auth", "print-access-token", "--account=atomic1017@gmail.com"],
         capture_output=True, text=True, check=True).stdout.strip()
     env = {"DOPAGUARD_PROJECT": "dopadopa", "DOPAGUARD_MODEL_LOCATION": "global",

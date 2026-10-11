@@ -1,6 +1,7 @@
 """Exercise the actual store with fictional, isolated records; no saved tokens."""
 import json
 import subprocess
+from tools.cloud_cli import gcloud_executable
 from pathlib import Path
 from uuid import uuid4
 from time import time
@@ -11,7 +12,7 @@ from server.store import FirestoreStore, ConflictError
 
 def main():
     token = subprocess.run([
-        r"C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
+        gcloud_executable(),
         "auth", "print-access-token", "--account=atomic1017@gmail.com",
     ], capture_output=True, text=True, check=True).stdout.strip()
     store = FirestoreStore.__new__(FirestoreStore)

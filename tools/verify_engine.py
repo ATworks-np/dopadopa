@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import secrets
 import subprocess
+from tools.cloud_cli import gcloud_executable
 import requests
 from server.samples import sample_batch
 from server.models import Analysis, Event
@@ -19,7 +20,7 @@ def main():
     if deployment.get("status") != "deployed" or not deployment.get("resource_name"):
         raise RuntimeError("confirm existing deployment operation before verification")
     resource = deployment["resource_name"]
-    oauth = subprocess.run([r"C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
+    oauth = subprocess.run([gcloud_executable(),
         "auth", "print-access-token", "--account=atomic1017@gmail.com"], capture_output=True, text=True, check=True).stdout.strip()
     base = "https://dopaguard-api-463106527119.asia-northeast1.run.app"
     token = None

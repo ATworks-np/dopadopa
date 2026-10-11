@@ -1,13 +1,14 @@
 """Register the Firebase web app and save public client configuration only."""
 import json
 import subprocess
+from tools.cloud_cli import gcloud_executable
 import time
 from pathlib import Path
 import requests
 
 def main():
     token = subprocess.run([
-        r"C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
+        gcloud_executable(),
         "auth", "print-access-token", "--account=atomic1017@gmail.com",
     ], capture_output=True, text=True, check=True).stdout.strip()
     session = requests.Session()

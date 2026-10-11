@@ -1,6 +1,7 @@
 """Run actual Vertex Gemini against explicitly fictional scenarios."""
 import json
 import subprocess
+from tools.cloud_cli import gcloud_executable
 import traceback
 from pathlib import Path
 from google import genai
@@ -12,7 +13,7 @@ from server.store import MemoryStore
 
 def main():
     token = subprocess.run([
-        r"C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
+        gcloud_executable(),
         "auth", "print-access-token", "--account=atomic1017@gmail.com",
     ], capture_output=True, text=True, check=True).stdout.strip()
     records = []

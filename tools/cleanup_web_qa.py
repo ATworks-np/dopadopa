@@ -1,6 +1,7 @@
 """Remove only the named disposable browser QA fixture; no saved credentials."""
 import json
 import subprocess
+from tools.cloud_cli import gcloud_executable
 import sys
 import requests
 from google.oauth2.credentials import Credentials
@@ -11,7 +12,7 @@ def main():
     email = sys.argv[1]
     if not (email.startswith('webqa-') and email.endswith('@example.invalid')):
         raise ValueError('only disposable web QA fixtures allowed')
-    token = subprocess.run([r'C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd',
+    token = subprocess.run([gcloud_executable(),
         'auth', 'print-access-token', '--account=atomic1017@gmail.com'], capture_output=True, text=True, check=True).stdout.strip()
     session = requests.Session()
     session.headers.update({'Authorization':'Bearer '+token,'x-goog-user-project':'dopadopa'})

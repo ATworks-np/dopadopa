@@ -2,12 +2,13 @@
 import json
 from pathlib import Path
 import subprocess
+from tools.cloud_cli import gcloud_executable
 import requests
 
 def main():
     root = Path(__file__).resolve().parents[1]
     recorded = json.loads((root / "artifacts/cloud/engine-operation.json").read_text())
-    token = subprocess.run([r"C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
+    token = subprocess.run([gcloud_executable(),
         "auth", "print-access-token", "--account=atomic1017@gmail.com"],
         capture_output=True, text=True, check=True).stdout.strip()
     response = requests.get("https://asia-northeast1-aiplatform.googleapis.com/v1/" + recorded["operation_name"],

@@ -293,3 +293,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - tools.verify_cloud_apiにstarted_atとAPI別elapsed_ms/HTTP状態を追加。route内IDは{id}へ置換、本文/tokenを保存しない。例外時も型と経過時間のみ記録。
 - session86955終端PASS。分析API13.373秒、認可/訂正/削除世代/cleanuptrue。cloud-api-smoke.json更新。断続的タイムアウト原因は未特定で、短い成功1回を解消証拠にしない。
 - 別端末用資料を時間計測の利用手順に更新。実機保留/エミュレータ不使用/Web対象外維持。生存検証handleなし。
+
+## DG-017 別端末用CLI解決
+- 11本のクラウドtoolsにあった旧PC固定gcloud.cmdパスをtools.cloud_cliへ集約。PATH上のgcloud.cmd/gcloudを使用し、未導入なら認証前に明確なエラーを返す。管理アカウント指定とtokenのメモリ内取得は維持。
+- Windows/Unix/SDK不在の模擬3ケースPASS、tools compileall成功。クラウド再配置・新推論・端末使用なし。
+- 引継ぎ資料をPATH設定とpython -m tools.<module>実行へ更新。新端末での実認証・CLI起動は本人のセットアップ後に確認する。

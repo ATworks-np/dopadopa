@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import re
 import subprocess
+from tools.cloud_cli import gcloud_executable
 import requests
 from server.samples import sample_batch
 
@@ -18,7 +19,7 @@ def main():
         smoke = json.loads((root / "artifacts/cloud/engine-smoke.json").read_text())
         if smoke["status"] != "passed" or smoke["resource_name"] != resource: raise RuntimeError("matching smoke required")
         since = smoke["started_at"]
-    token = subprocess.run([r"C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
+    token = subprocess.run([gcloud_executable(),
         "auth", "print-access-token", "--account=atomic1017@gmail.com"], capture_output=True, text=True, check=True).stdout.strip()
     headers = {"Authorization": "Bearer " + token}
     response = requests.get("https://asia-northeast1-aiplatform.googleapis.com/v1/" + resource, headers=headers, timeout=30)
