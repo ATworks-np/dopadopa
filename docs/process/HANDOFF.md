@@ -181,3 +181,7 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 ## DG-008 保持期限の補完
 - LocalRetentionで7日Room削除と孤立同期メタデータ削除。poll同意/UsageStats確認前・sync認証確認前に接続。session65809終端SUCCESS、単体18件/保持期限instrumentation1件/assembleDebug PASS。android-retention.xml。架空DBのみ。
 - 次は固定再送前に遅延イベントが500件上限を超える場合、削除障害復帰、Agent Engine配置、実機収集/E2E、提出物。WebはMVP対象外、DG-008 in-progress。
+
+## 2026-10-11 実機テスト待機のユーザー指示
+- ユーザーが『実機テストはまってください』と指定。再開指示まで実Android端末へのインストール・YouTube収集・実機E2Eは実施しない。エミュレータ/架空データ/クラウド開発は継続可能。
+- 対応履歴は本ファイル、RISKS_AND_DECISIONS、各チケット、artifactsの検証証拠に記録。Git導入前の変更は6205566の初回コミットに集約。会話全文、全コマンドの生ログ、保存していないブラウザ画像は収録していない。秘密情報、ローカル生成物、添付zipは除外。
