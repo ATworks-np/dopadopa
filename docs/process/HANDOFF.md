@@ -265,3 +265,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - verify_cloud_apiに固定QAタグ検証先と失敗時の非ゼロ終了を追加。通常公開trafficは00010-gth ADKのまま。QA後のログ監査・公開切替・Android連携確認は未実施。
 - ユーザーが実機テスト保留を再指示。実機確認は再開指示まで行わない。WebデモはMVP対象外を維持。
 - 対応経緯は本HANDOFF、各ticket、検証artifacts、Git履歴に保存。チャット全文、認証情報、ログ原文は保存対象外。
+
+## DG-017 QA後ログ監査
+- verify_engine_logsの原文検出対象をlearning-only/learning-shorts/unobservableの3シナリオへ拡張。
+- 最新直接検証開始2026-10-11T07:46:17.696424+00:00以降のEngineログ132件、全ページ監査PASS。原文/JWTパターンなし、telemetry disabled/content captureなし。engine-log-audit-current.jsonを更新。過去の漏出記録は保持。将来の全経路非出力を保証する証拠ではない。
+- 次はQA候補00013-hexの通常traffic切替と公開API・Androidエミュレータ連携確認。実機試験は引き続き保留、Web対象外。

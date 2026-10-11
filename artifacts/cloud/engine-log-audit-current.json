@@ -1,13 +1,13 @@
 {
   "resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656",
-  "entries_checked": 17,
+  "entries_checked": 132,
   "pagination_complete": true,
   "telemetry_disabled": true,
   "content_capture_not_enabled": true,
   "sample_content_found": false,
   "jwt_pattern_found": false,
-  "scope": "all available runtime entries for this Engine; future output not guaranteed",
+  "scope": "all available runtime entries for this Engine within the recorded time filter; all three sample scenarios scanned; future output not guaranteed",
   "finding_counts_by_log_and_severity": {},
-  "since": "2026-10-11T07:39:25.317029+00:00",
+  "since": "2026-10-11T07:46:17.696424+00:00",
   "status": "passed"
 }

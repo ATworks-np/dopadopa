@@ -38,14 +38,17 @@ def main():
         cursor = page.get("nextPageToken")
         if not cursor: break
     text = json.dumps(entries, ensure_ascii=False)
-    sample = sample_batch("learning-only")
-    markers = [event.text for event in sample.events if event.text] + [sample.user_goal, "fictional-invalid-token"]
+    markers = ["fictional-invalid-token"]
+    for scenario in ("learning-only", "learning-shorts", "unobservable"):
+        sample = sample_batch(scenario)
+        markers.extend(event.text for event in sample.events if event.text)
+        if sample.user_goal: markers.append(sample.user_goal)
     evidence = {"resource_name": resource, "entries_checked": len(entries), "pagination_complete": not cursor,
         "telemetry_disabled": variables.get("GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY") == "false",
         "content_capture_not_enabled": not variables.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"),
         "sample_content_found": any(marker in text for marker in markers),
         "jwt_pattern_found": bool(re.search(r"eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}", text)),
-        "scope": "all available runtime entries for this Engine; future output not guaranteed"}
+        "scope": "all available runtime entries for this Engine within the recorded time filter; all three sample scenarios scanned; future output not guaranteed"}
     findings = {}
     for entry in entries:
         serialized = json.dumps(entry, ensure_ascii=False)
