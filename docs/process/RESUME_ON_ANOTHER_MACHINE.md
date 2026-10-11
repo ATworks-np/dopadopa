@@ -71,6 +71,7 @@ gcloud run services describe dopaguard-api --project=dopadopa --region=asia-nort
 ## 成功証拠と未解決事項
 
 - サーバー48件、Android単体18件、docs4件が直近成功。22tickets validate正常。
+- 公開Engineの観測不足シナリオもinsufficient_data/unknown・区間/転換なしで成功。artifacts/cloud/cloud-api-smoke-unobservable.json。再確認はpython -m tools.verify_cloud_api --scenario unobservable（端末不要）。
 - Engine直接分析、認可/削除世代、QAタグと公開URLの分析・訂正・削除は架空データで成功。artifacts/cloud/engine-smoke.json、engine-tag-api-smoke.json、cloud-api-smoke.json。
 - 過去のEngine例外ログでsample原文/JWTパターン7件を検出。query例外を機密なしenvelopeへ変換し、更新後の監査132件では検出なし。過去の検出証拠も保持。将来全経路の非出力保証とは扱わない。
 - 最後のAndroid連携は分析read timeoutで失敗。固定診断はengine_transport、Cloud Run応答55.545秒。artifacts/tests/android-engine-timeout.xml。

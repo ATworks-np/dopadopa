@@ -12,8 +12,10 @@ BASE = "https://dopaguard-api-463106527119.asia-northeast1.run.app"
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--engine-qa", action="store_true")
+    parser.add_argument("--scenario", choices=("learning-only", "learning-shorts", "unobservable"), default="learning-only")
     args = parser.parse_args()
     base = "https://engine-qa---dopaguard-api-p4kp2phc5q-an.a.run.app" if args.engine_qa else BASE
+    import_path = "/v1/demo/sessions/" + args.scenario + "/import"
     key = json.loads(Path("artifacts/cloud/firebase-web-config.json").read_text(encoding="utf-8"))["apiKey"]
     tokens, checks, timings = [], [], []
     def identity(method, body):
@@ -43,7 +45,7 @@ def main():
             timings.append(timing)
         if response.status_code != expected: raise RuntimeError(f"API {path}: HTTP {response.status_code}, expected {expected}")
         return response.json()
-    result = {"project": "dopadopa", "data_origin": "sample", "checks": checks,
+    result = {"project": "dopadopa", "data_origin": "sample", "scenario": args.scenario, "checks": checks,
         "started_at": datetime.now(timezone.utc).isoformat(), "request_timings": timings}
     try:
         for _ in range(2):
@@ -56,7 +58,7 @@ def main():
         api("GET", "/v1/sessions", "invalid-token", expected=401)
         checks.append("health and unauthenticated/invalid token rejection")
         old_generation = api('GET','/v1/user/generation',tokens[0])['generation']
-        imported = api("POST", "/v1/demo/sessions/learning-only/import", tokens[0], generation=old_generation)
+        imported = api("POST", import_path, tokens[0], generation=old_generation)
         assert imported["data_origin"] == "sample"
         sid = imported["session_id"]
         api("GET", "/v1/sessions/" + sid, tokens[1], expected=404)
@@ -68,6 +70,11 @@ def main():
             raise RuntimeError("real cloud analysis failed")
         assert analysis["result"]["data_origin"] == "sample"
         assert analysis["result"]["user_confirmation_required"] is True
+        if args.scenario == "unobservable":
+            assert analysis["status"] == "insufficient_data"
+            assert analysis["result"]["goal_alignment"] == "unknown"
+            assert not analysis["result"]["segments"] and not analysis["result"]["transitions"]
+            checks.append("unobservable sample stays unknown without invented segments or transitions")
         aid = analysis["analysis_id"]
         api("GET", "/v1/analyses/" + aid, tokens[1], expected=404)
         checks.append("Cloud Run analysis and other owner rejection")
@@ -80,12 +87,12 @@ def main():
         assert api("GET", "/v1/sessions", tokens[0]) == []
         api("GET", "/v1/analyses/" + aid, tokens[0], expected=404)
         checks.append("owner data deletion verified")
-        api('POST','/v1/demo/sessions/learning-only/import',tokens[0],expected=409,generation=old_generation)
-        api('POST','/v1/demo/sessions/learning-only/import',tokens[0],expected=409)
+        api('POST',import_path,tokens[0],expected=409,generation=old_generation)
+        api('POST',import_path,tokens[0],expected=409)
         assert api('GET','/v1/sessions',tokens[0]) == []
         current = api('GET','/v1/user/generation',tokens[0])['generation']
         assert current > old_generation
-        api('POST','/v1/demo/sessions/learning-only/import',tokens[0],generation=current)
+        api('POST',import_path,tokens[0],generation=current)
         assert len(api('GET','/v1/sessions',tokens[0])) == 1
         checks.append('old and missing generation rejected after deletion; explicit current generation sync accepted')
         result["status"] = "passed"
@@ -103,6 +110,8 @@ def main():
         result["temporary_accounts_cleaned"] = cleanup
         result["target"] = base
         filename = "engine-tag-api-smoke.json" if args.engine_qa else "cloud-api-smoke.json"
+        if args.scenario != "learning-only":
+            filename = filename.removesuffix(".json") + "-" + args.scenario + ".json"
         Path("artifacts/cloud/" + filename).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
         print(json.dumps(result, ensure_ascii=False))
     if result["status"] != "passed" or not all(result["temporary_accounts_cleaned"]):

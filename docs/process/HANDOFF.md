@@ -298,3 +298,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - 11本のクラウドtoolsにあった旧PC固定gcloud.cmdパスをtools.cloud_cliへ集約。PATH上のgcloud.cmd/gcloudを使用し、未導入なら認証前に明確なエラーを返す。管理アカウント指定とtokenのメモリ内取得は維持。
 - Windows/Unix/SDK不在の模擬3ケースPASS、tools compileall成功。クラウド再配置・新推論・端末使用なし。
 - 引継ぎ資料をPATH設定とpython -m tools.<module>実行へ更新。新端末での実認証・CLI起動は本人のセットアップ後に確認する。
+
+## DG-017 公開経路の観測不足検証
+- verify_cloud_apiに--scenario（learning-only/learning-shorts/unobservable）を追加し、非default結果はシナリオ別ファイルへ保存。unknown条件はstatus/goal_alignment/segments/transitionsを明示照合する。
+- unobservableの公開Engine検証session92761終端PASS。insufficient_data/unknown、区間・転換なし、分析11.037秒、必須3Tool、訂正/削除世代/2Authcleanuptrue。cloud-api-smoke-unobservable.json。
+- 実機/エミュレータ使用なし。実機E2Eと断続的transport timeout原因は残る。

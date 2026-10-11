@@ -1,0 +1,168 @@
+{
+  "project": "dopadopa",
+  "data_origin": "sample",
+  "scenario": "unobservable",
+  "checks": [
+    "Firebase email/password signup",
+    "health and unauthenticated/invalid token rejection",
+    "real Firebase token owner isolation and sample provenance",
+    "unobservable sample stays unknown without invented segments or transitions",
+    "Cloud Run analysis and other owner rejection",
+    "explicit correction saved and read back",
+    "owner data deletion verified",
+    "old and missing generation rejected after deletion; explicit current generation sync accepted"
+  ],
+  "started_at": "2026-10-11T08:35:38.310532+00:00",
+  "request_timings": [
+    {
+      "method": "GET",
+      "route": "/health",
+      "http_status": 200,
+      "elapsed_ms": 233
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 401,
+      "elapsed_ms": 230
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 401,
+      "elapsed_ms": 250
+    },
+    {
+      "method": "GET",
+      "route": "/v1/user/generation",
+      "http_status": 200,
+      "elapsed_ms": 604
+    },
+    {
+      "method": "POST",
+      "route": "/v1/demo/sessions/unobservable/import",
+      "http_status": 200,
+      "elapsed_ms": 670
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions/{id}",
+      "http_status": 404,
+      "elapsed_ms": 541
+    },
+    {
+      "method": "POST",
+      "route": "/v1/analyses",
+      "http_status": 200,
+      "elapsed_ms": 11037
+    },
+    {
+      "method": "GET",
+      "route": "/v1/analyses/{id}",
+      "http_status": 404,
+      "elapsed_ms": 539
+    },
+    {
+      "method": "POST",
+      "route": "/v1/analyses/{id}/feedback",
+      "http_status": 200,
+      "elapsed_ms": 665
+    },
+    {
+      "method": "GET",
+      "route": "/v1/analyses/{id}/feedback",
+      "http_status": 200,
+      "elapsed_ms": 558
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/user/data",
+      "http_status": 200,
+      "elapsed_ms": 1067
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 200,
+      "elapsed_ms": 515
+    },
+    {
+      "method": "GET",
+      "route": "/v1/analyses/{id}",
+      "http_status": 404,
+      "elapsed_ms": 508
+    },
+    {
+      "method": "POST",
+      "route": "/v1/demo/sessions/unobservable/import",
+      "http_status": 409,
+      "elapsed_ms": 557
+    },
+    {
+      "method": "POST",
+      "route": "/v1/demo/sessions/unobservable/import",
+      "http_status": 409,
+      "elapsed_ms": 561
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 200,
+      "elapsed_ms": 535
+    },
+    {
+      "method": "GET",
+      "route": "/v1/user/generation",
+      "http_status": 200,
+      "elapsed_ms": 560
+    },
+    {
+      "method": "POST",
+      "route": "/v1/demo/sessions/unobservable/import",
+      "http_status": 200,
+      "elapsed_ms": 630
+    },
+    {
+      "method": "GET",
+      "route": "/v1/sessions",
+      "http_status": 200,
+      "elapsed_ms": 551
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/user/data",
+      "http_status": 200,
+      "elapsed_ms": 891
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/user/data",
+      "http_status": 200,
+      "elapsed_ms": 801
+    }
+  ],
+  "analysis_status": "insufficient_data",
+  "trace": [
+    {
+      "elapsed_ms": 38,
+      "tool": "get_user_goals",
+      "count": 1
+    },
+    {
+      "count": 4,
+      "elapsed_ms": 28,
+      "tool": "get_timeline"
+    },
+    {
+      "count": 3,
+      "tool": "get_click_events",
+      "elapsed_ms": 37
+    }
+  ],
+  "status": "passed",
+  "temporary_accounts_cleaned": [
+    true,
+    true
+  ],
+  "target": "https://dopaguard-api-463106527119.asia-northeast1.run.app"
+}
