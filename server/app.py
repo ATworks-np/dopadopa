@@ -110,14 +110,18 @@ class AnalyzeInput(BaseModel):
     session_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,100}$")
 
 @app.post("/v1/analyses")
-def analyze(body: AnalyzeInput, uid=Depends(authenticated_user), store=Depends(get_store)):
+def analyze(body: AnalyzeInput, uid=Depends(authenticated_user), store=Depends(get_store),
+            authorization: str | None = Header(default=None)):
     generation = store.generation(uid)
     session = owned(store, uid, "sessions", body.session_id)
     aid = "a-" + str(uuid4())
     record = {"analysis_id": aid, "session_id": body.session_id, "status": "running", "data_origin": session["events"][0]["data_origin"], "trace": [], "created_at": datetime.now(timezone.utc).isoformat()}
     store.put(uid, "analyses", aid, record, expected_generation=generation)
     try:
-        if os.environ.get("AGENT_BACKEND") == "adk":
+        if os.environ.get("AGENT_BACKEND") == "engine":
+            from server.remote_engine import RemoteEngineRunner
+            runner = RemoteEngineRunner(store, authorization)
+        elif os.environ.get("AGENT_BACKEND") == "adk":
             from server.adk_agent import AdkBehaviorRunner
             runner = AdkBehaviorRunner(store)
         else:

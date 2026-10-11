@@ -4,7 +4,8 @@
   "resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656",
   "http_status": 400,
   "diagnostic_matches": [
-    "invalid generation"
+    "event loop",
+    "asyncio"
   ],
   "error_type": "RuntimeError",
   "temporary_account_cleaned": true

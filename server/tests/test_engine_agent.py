@@ -1,4 +1,5 @@
 import unittest
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 from server.engine_agent import DopaGuardEngineAgent
@@ -14,8 +15,14 @@ class EngineBoundaryTest(unittest.TestCase):
              patch("server.engine_agent.FirestoreStore", return_value=store), \
              patch("server.engine_agent.AdkBehaviorRunner") as runner:
             runner.return_value.run.return_value = (result, [])
+            def own_loop(*args):
+                async def perform(): return result, []
+                return asyncio.run(perform())
+            runner.return_value.run.side_effect = own_loop
+            async def managed_handler():
+                return DopaGuardEngineAgent().query("fictional-token", "sample-session", "sample-analysis", 7.0)
             self.assertEqual({"result": {"sample": True}, "trace": []},
-                DopaGuardEngineAgent().query("fictional-token", "sample-session", "sample-analysis", 7.0))
+                asyncio.run(managed_handler()))
             auth.assert_called_once_with("Bearer fictional-token")
             runner.return_value.run.assert_called_once_with("verified-owner", "sample-session", "sample-analysis")
             store.db.close.assert_called_once()

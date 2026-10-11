@@ -5,6 +5,7 @@ Deployment must keep payload/token tracing disabled.
 """
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from server.auth import authenticated_user
 from server.store import FirestoreStore, ConflictError
 from server.adk_agent import AdkBehaviorRunner
@@ -30,7 +31,10 @@ class DopaGuardEngineAgent:
         try:
             if store.generation(uid) != expected_generation:
                 raise ConflictError("data changed before investigation")
-            result, trace = AdkBehaviorRunner(store).run(uid, session_id, analysis_id)
+            # Managed query handlers may already run on an asyncio event loop.
+            # Give the synchronous runner its own loop without retaining state.
+            with ThreadPoolExecutor(max_workers=1) as worker:
+                result, trace = worker.submit(AdkBehaviorRunner(store).run, uid, session_id, analysis_id).result(timeout=50)
             if store.generation(uid) != expected_generation:
                 raise ConflictError("data changed during investigation")
             return {"result": result.model_dump(mode="json"), "trace": trace}

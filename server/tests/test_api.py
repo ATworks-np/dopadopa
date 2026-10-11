@@ -17,6 +17,18 @@ class ApiTest(unittest.TestCase):
     def test_auth_required(self):
         del app.dependency_overrides[authenticated_user]
         self.assertEqual(401, self.client.get("/v1/sessions").status_code)
+    def test_engine_backend_forwards_verified_request_and_records_safe_failure(self):
+        self.client.post("/v1/sessions:batch", json=self.batch)
+        with patch.dict("os.environ", {"AGENT_BACKEND": "engine"}), \
+             patch("server.remote_engine.RemoteEngineRunner") as runner:
+            runner.return_value.run.side_effect = RuntimeError("fictional provider detail")
+            runner.return_value.trace = []
+            result = self.client.post("/v1/analyses", json={"session_id": "s1"},
+                headers={"Authorization": "Bearer fictional-token"}).json()
+            self.assertEqual("failed", result["status"])
+            self.assertNotIn("fictional provider detail", str(result))
+            runner.assert_called_once_with(self.store, "Bearer fictional-token")
+            self.assertEqual("alice", runner.return_value.run.call_args.args[0])
     def test_owner_isolation(self):
         self.assertEqual(200, self.client.post("/v1/sessions:batch", json=self.batch).status_code)
         app.dependency_overrides[authenticated_user] = lambda: "bob"

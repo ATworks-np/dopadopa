@@ -40,7 +40,10 @@ def main():
             # Classify allowlisted diagnostics without saving provider bodies.
             evidence["diagnostic_matches"] = [label for label in (
                 "invalid generation", "invalid authentication", "PermissionDenied", "permission",
-                "invalid ID", "ModuleNotFoundError", "unexpected keyword", "not found", "class_method")
+                "invalid ID", "ModuleNotFoundError", "unexpected keyword", "not found", "class_method",
+                "RuntimeError", "ValueError", "PermissionError", "ValidationError", "DefaultCredentialsError",
+                "event loop", "asyncio", "GEMINI_MODEL", "credential", "403", "401", "404", "setup",
+                "app already exists", "api_key", "project", "location", "model", "KeyError")
                 if label in response.text]
             raise RuntimeError("engine query failed")
         output = response.json()["output"]

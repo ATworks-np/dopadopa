@@ -230,3 +230,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - session87233のSDKupdate進行中、最後のpoll非終端。LRO projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656/operations/7129090595426926592。同じprocess/operationを確認して続行。新create禁止。
 - server/remote_engine.py追加、単体2件PASS。まだapp.py分岐へ未接続/Cloud Run未配置。次はEngine更新完了→verify_engine→認可とログ非出力実確認→API組込み。現公開00010-gth adk。
 - 実機待機/Web対象外を維持。
+
+## DG-017 非同期loop対応 更新中
+- 初回更新成功後のverify_engineはevent loop/asyncio衝突で失敗、cleanuptrue。engine_agentの同期runnerを呼出し単位の専用threadへ変更、managed loopテスト3件PASS。
+- session52982生存/非終端、LRO6992575231722258432で同じEngine更新中。次は同じhandle/operation確認→verify_engine→ログと認可実検証。
+- app.py engine分岐接続済みだが未配置/環境設定adk維持。全46件PASS、その後追加API routing試験を含む12件PASS。実機待機/Web対象外。
