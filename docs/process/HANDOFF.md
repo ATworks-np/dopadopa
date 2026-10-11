@@ -190,3 +190,8 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - Firestore削除に120秒leaseと各削除transaction世代確認を追加。プロセス中断後の期限切れ再試行、旧workerの新世代削除/失敗状態更新阻止。server41件PASS。実Firestoreの架空fixtureで中断/障害復帰PASS、cleanuptrue。
 - Build82a98971-4324-4d9c-8ed5-3d913ffa5221開始。次は同じbuildの状態確認→SUCCESSならCloud Run配置→削除/同期API確認。現公開00009-jd9は旧コード。
 - 実機はユーザー指示で待機。WebはMVP対象外。Agent Engine、同期上限、Android実機E2E、提出物は未完了。
+
+## DG-008削除復帰版 配置済み
+- Build82a98971 SUCCESS、Cloud Run00010-gth 100%配置完了、session40421終端成功。公開世代API検証session49082 PASS/cleanuptrue。
+- 公開API強制クラッシュ試験は未実施。中断/障害復帰は実Firestoreストア検証で確認。現コードとCloud Runは削除lease修正で一致。
+- 次は同期固定payloadと後発501件以上の観測の扱いを確認、Agent Engine配置、提出物。実機は再開指示まで待機、WebはMVP対象外。
