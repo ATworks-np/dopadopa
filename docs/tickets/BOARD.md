@@ -42,7 +42,7 @@ _該当なし_
 | [DG-311](in-progress/DG-311.md) | P0 | M6 | 根拠と目標に応じたLLM休止提案コメント | - | Codex |
 | [DG-312](in-progress/DG-312.md) | P0 | M6 | Androidのタブ分割とUIデザイン整理 | - | Codex |
 | [DG-313](in-progress/DG-313.md) | P0 | M6 | YouTubeの使い方を5ターンで決める対話セットアップ | - | Codex |
-| [DG-314](in-progress/DG-314.md) | P0 | M6 | 回答に応じて質問を生成する使い方相談エージェント | - | Codex |
+| [DG-314](in-progress/DG-314.md) | P0 | M6 | 5つから複数選択する目標設定 | - | Codex |
 | [DG-315](in-progress/DG-315.md) | P0 | M6 | アカウント欄からデータ削除と初期化 | - | Codex |
 
 ## blocked (2)

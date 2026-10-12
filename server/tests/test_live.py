@@ -27,7 +27,7 @@ def fake_analysis(uid, sid, aid):
     result = Analysis(analysis_id=aid, session_id=sid, segments=[], transitions=[], goal_alignment="unknown",
         uncertainty="架空試験", user_confirmation_required=True, data_origin="sample")
     trace = [{"tool": name, "count": 1, "elapsed_ms": 1}
-        for name in ("get_user_goals", "get_timeline", "get_click_events")]
+        for name in ("get_user_goals", "get_timeline", "get_content_events")]
     return result, trace
 
 class LiveApiTest(unittest.TestCase):
@@ -176,7 +176,7 @@ class LiveApiTest(unittest.TestCase):
         self.assertEqual("failed", body["status"])
         self.assertEqual("unknown", body["diagnostic_stage"])
         self.assertNotIn(secret, str(body))
-        self.assertIn("WARNING:dopaguard:live_analysis_failure stage=unknown", logs.output)
+        self.assertIn("WARNING:dopaguard:live_analysis_failure stage=unknown http_status=None", logs.output)
         self.assertFalse(any(secret in line for line in logs.output))
 
     def test_live_failure_log_keeps_fixed_transport_stage(self):
@@ -190,7 +190,7 @@ class LiveApiTest(unittest.TestCase):
         body = response.json()
         self.assertEqual("engine_transport", body["diagnostic_stage"])
         self.assertNotIn(secret, str(body))
-        self.assertIn("WARNING:dopaguard:live_analysis_failure stage=engine_transport", logs.output)
+        self.assertIn("WARNING:dopaguard:live_analysis_failure stage=engine_transport http_status=None", logs.output)
         self.assertFalse(any(secret in line for line in logs.output))
 
     def test_engine_path_binds_snapshot_without_accepting_owner_from_model(self):

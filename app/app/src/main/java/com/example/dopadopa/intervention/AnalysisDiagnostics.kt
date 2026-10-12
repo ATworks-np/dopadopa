@@ -3,18 +3,18 @@ package com.example.dopadopa.intervention
 /** Fixed analysis log lines. Free text, IDs, and tokens never enter the line. */
 object AnalysisDiagnostics {
     private val clock = Regex("\\d{2}:\\d{2}:\\d{2}")
-    private val statuses = setOf("completed", "insufficient_data", "failed", "discarded", "no_observations", "cancelled", "skipped")
+    private val statuses = setOf("completed", "insufficient_data", "failed", "no_observations", "cancelled", "skipped")
     private val stages = setOf(
         "configuration", "service_credentials", "engine_transport", "engine_http_rejection", "engine_output",
         "engine_model_execution", "engine_model_deadline", "engine_result_validation", "model_execution",
         "model_deadline", "result_validation", "generation_validation", "trace_validation", "local_runner",
-        "device_transport", "discarded", "no_observations", "cancelled", "skipped", "unknown")
+        "device_transport", "no_observations", "cancelled", "skipped", "rate_limited", "unknown")
     private val alignments = setOf("unknown", "aligned", "possibly_diverged")
-    private val tools = setOf("get_user_goals", "get_timeline", "get_click_events", "get_past_feedback")
+    private val tools = setOf("get_user_goals", "get_timeline", "get_content_events", "get_click_events", "get_past_feedback")
     private val toolPattern = tools.joinToString("|")
     private val line = Regex("\\d{2}:\\d{2}:\\d{2} status=(${statuses.joinToString("|")}) stage=(${stages.joinToString("|")}) alignment=(${alignments.joinToString("|")}) tools=(none|invalid|(?:$toolPattern)(?:,(?:$toolPattern))*)")
 
-    fun serverStage(raw: String?): String = if (raw != null && raw in stages && raw !in setOf("device_transport", "discarded", "no_observations", "cancelled", "skipped")) raw else "unknown"
+    fun serverStage(raw: String?): String = if (raw != null && raw in stages && raw !in setOf("device_transport", "no_observations", "cancelled", "skipped")) raw else "unknown"
 
     fun tools(names: List<String>): String {
         if (names.isEmpty()) return "none"

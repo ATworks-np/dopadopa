@@ -13,7 +13,7 @@ class FakeClient:
     def generate_content(self, **kwargs):
         self.step += 1
         if self.step == 1 or self.repeated:
-            calls = [types.FunctionCall(name=name, args={"session_id":"s1"}) for name in ("get_user_goals", "get_timeline", "get_click_events")]
+            calls = [types.FunctionCall(name=name, args={"session_id":"s1"}) for name in ("get_user_goals", "get_timeline", "get_content_events")]
             content = types.Content(role="model", parts=[types.Part(function_call=c) for c in calls])
             return SimpleNamespace(candidates=[SimpleNamespace(content=content)], function_calls=calls)
         if self.step == 2:
@@ -21,6 +21,10 @@ class FakeClient:
         return SimpleNamespace(text=self.result.model_dump_json())
 
 class AgentTest(unittest.TestCase):
+    def test_prompt_states_how_to_choose_alignment(self):
+        from server.agent import PROMPT
+        for sentence in ("分析は二つの軸を独立に判定します", "goal_alignment=alignedは", "goal_alignment=possibly_divergedは", "goal_alignment=unknownは"):
+            self.assertIn(sentence, PROMPT)
     def setUp(self):
         self.store = MemoryStore()
         self.store.put("alice", "sessions", "s1", {"session_id":"s1", "user_goal":"学ぶ", "events":[event().model_dump(mode="json")]})
@@ -31,6 +35,17 @@ class AgentTest(unittest.TestCase):
             with self.assertRaises((ValueError, PermissionError)): ToolGateway(self.store, "alice", "s1").call("get_timeline", args)
     def test_write_tool_prohibited(self):
         with self.assertRaises(ValueError): ToolGateway(self.store, "alice", "s1").call("save_behavior_feedback", {"session_id":"s1"})
+    def test_content_tool_preserves_screen_titles_and_missing_clicks(self):
+        title = event(event_id="title", event_type="WINDOW_CHANGE", source="parent_context", observability="inferred").model_dump(mode="json")
+        missing = event(text=None, text_status="missing", source="none", observability="unavailable").model_dump(mode="json")
+        scroll = event(event_id="scroll", event_type="SCROLL", text=None, text_status="missing", source="none", observability="unavailable").model_dump(mode="json")
+        self.store.put("alice", "sessions", "s1", {"user_goal":"学ぶ", "events":[title, missing, scroll]})
+        data = ToolGateway(self.store, "alice", "s1").call("get_content_events", {"session_id":"s1"})["events"]
+        self.assertEqual(["WINDOW_CHANGE", "CLICK"], [row["event_type"] for row in data])
+        self.assertEqual("Kotlin", data[0]["text"])
+        self.assertEqual("inferred", data[0]["observability"])
+        self.assertEqual("missing", data[1]["text_status"])
+
     def test_loop_returns_validated_json(self):
         result, trace = AgentRunner(self.store, FakeClient(analysis()), "test-model").run("alice", "s1", "a1")
         self.assertEqual("unknown", result.goal_alignment)

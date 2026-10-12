@@ -1,21 +1,23 @@
 {
-  "status": "passed",
+  "status": "failed",
   "data_origin": "sample",
   "resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656",
-  "started_at": "2026-10-11T07:46:17.696424+00:00",
-  "scenario": "learning-shorts",
+  "started_at": "2026-10-12T07:13:15.496592+00:00",
+  "scenario": "learning-only",
+  "screen_titles_only": true,
   "goal_alignment": "aligned",
+  "usage_pattern": "no_clear_chaining",
   "tools": [
-    "get_click_events",
+    "get_content_events",
     "get_timeline",
     "get_user_goals"
   ],
   "evidence_valid": true,
-  "boundary_checks": [
-    "invalid Firebase token rejected",
-    "other authenticated owner cannot investigate session",
-    "stale generation rejected before model"
-  ],
+  "title_evidence_used": true,
+  "api_analysis_status": "completed",
+  "api_alignment": "aligned",
+  "api_usage_pattern": "no_clear_chaining",
+  "error_type": "ReadTimeout",
   "other_account_cleaned": true,
   "temporary_account_cleaned": true
 }

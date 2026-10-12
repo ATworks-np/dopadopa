@@ -40,7 +40,7 @@ def main():
         if not cursor: break
     text = json.dumps(entries, ensure_ascii=False)
     markers = ["fictional-invalid-token"]
-    for scenario in ("learning-only", "learning-shorts", "unobservable"):
+    for scenario in ("learning-only", "learning-shorts", "unobservable", "related-chain"):
         sample = sample_batch(scenario)
         markers.extend(event.text for event in sample.events if event.text)
         if sample.user_goal: markers.append(sample.user_goal)
@@ -49,7 +49,7 @@ def main():
         "content_capture_not_enabled": not variables.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"),
         "sample_content_found": any(marker in text for marker in markers),
         "jwt_pattern_found": bool(re.search(r"eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}", text)),
-        "scope": "all available runtime entries for this Engine within the recorded time filter; all three sample scenarios scanned; future output not guaranteed"}
+        "scope": "all available runtime entries for this Engine within the recorded time filter; all four sample scenarios scanned; future output not guaranteed"}
     findings = {}
     for entry in entries:
         serialized = json.dumps(entry, ensure_ascii=False)

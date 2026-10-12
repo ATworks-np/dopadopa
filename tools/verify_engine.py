@@ -12,7 +12,10 @@ from server.models import Analysis, Event
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scenario", choices=["learning-only", "learning-shorts", "unobservable"], default="learning-only")
+    parser.add_argument("--scenario", choices=["learning-only", "learning-shorts", "unobservable", "related-chain"], default="learning-only")
+    parser.add_argument("--screen-titles", action="store_true")
+    parser.add_argument("--api-base", choices=["https://dopaguard-api-463106527119.asia-northeast1.run.app", "https://content-single---dopaguard-api-p4kp2phc5q-an.a.run.app"], default="https://dopaguard-api-463106527119.asia-northeast1.run.app")
+    parser.add_argument("--api-analysis", action="store_true")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     key = json.loads((root / "artifacts/cloud/firebase-web-config.json").read_text())["apiKey"]
@@ -22,7 +25,7 @@ def main():
     resource = deployment["resource_name"]
     oauth = subprocess.run([gcloud_executable(),
         "auth", "print-access-token", "--account=atomic1017@gmail.com"], capture_output=True, text=True, check=True).stdout.strip()
-    base = "https://dopaguard-api-463106527119.asia-northeast1.run.app"
+    base = args.api_base
     token = None
     other_token = None
     evidence = {"status": "failed", "data_origin": "sample", "resource_name": resource,
@@ -33,18 +36,27 @@ def main():
         response.raise_for_status()
         return response.json()
     def api(method, path, body=None):
-        response = requests.request(method, base + path, headers={"Authorization": "Bearer " + token}, json=body, timeout=30)
+        response = requests.request(method, base + path, headers={"Authorization": "Bearer " + token}, json=body, timeout=130 if path == "/v1/analyses" or path.endswith("/analyze") else 30)
         response.raise_for_status()
         return response.json()
     def query(user_token, sid, generation):
         return requests.post("https://asia-northeast1-aiplatform.googleapis.com/v1/" + resource + ":query",
-            headers={"Authorization": "Bearer " + oauth}, timeout=90,
+            headers={"Authorization": "Bearer " + oauth}, timeout=130,
             json={"class_method": "query", "input": {"firebase_token": user_token, "session_id": sid,
                 "analysis_id": "engine-sample-analysis", "expected_generation": generation}})
     try:
         token = identity("signUp", {"email": "engine-" + secrets.token_hex(12) + "@example.invalid",
             "password": secrets.token_urlsafe(32), "returnSecureToken": True})["idToken"]
         batch = sample_batch(args.scenario).model_dump(mode="json")
+        if args.screen_titles:
+            for event in batch["events"]:
+                if event["event_type"] == "CLICK":
+                    event["event_type"] = "WINDOW_CHANGE"
+                    if event["text_status"] == "available":
+                        event["source"] = "parent_context"
+                        event["observability"] = "inferred"
+            evidence["screen_titles_only"] = True
+            assert not any(e["event_type"] == "CLICK" for e in batch["events"])
         api("POST", "/v1/sessions:batch", batch)
         generation = api("GET", "/v1/user/generation")["generation"]
         response = query(token, batch["session_id"], generation)
@@ -67,8 +79,34 @@ def main():
         result.validate_evidence([Event.model_validate(row) for row in batch["events"]])
         assert result.data_origin == "sample" and result.user_confirmation_required
         names = {row["tool"] for row in output["trace"]}
-        assert {"get_user_goals", "get_timeline", "get_click_events"} <= names
-        evidence.update(goal_alignment=result.goal_alignment, tools=sorted(names), evidence_valid=True)
+        assert {"get_user_goals", "get_timeline", "get_content_events"} <= names
+        evidence.update(goal_alignment=result.goal_alignment, usage_pattern=result.usage_pattern, tools=sorted(names), evidence_valid=True)
+        if args.scenario == "related-chain":
+            assert result.usage_pattern == "possible_chaining"
+            assert result.suggestion_comment and result.suggestion_reason
+            evidence["chain_evidence_count"] = len(set(result.usage_pattern_evidence_ids))
+            assert evidence["chain_evidence_count"] >= 3
+        if args.scenario == "learning-only":
+            assert result.usage_pattern != "possible_chaining"
+            assert result.suggestion_comment is None
+        if args.screen_titles:
+            title_ids = {e["event_id"] for e in batch["events"] if e["event_type"] == "WINDOW_CHANGE" and e["text_status"] == "available"}
+            used = {eid for segment in result.segments for eid in segment.evidence_ids}
+            evidence["title_evidence_used"] = bool(title_ids & used)
+            if args.scenario == "learning-only": assert evidence["title_evidence_used"]
+        if args.api_analysis:
+            record = api("POST", "/v1/analyses", {"session_id": batch["session_id"]})
+            assert record["status"] in {"completed", "insufficient_data"}
+            api_result = Analysis.model_validate(record["result"])
+            api_result.validate_evidence([Event.model_validate(row) for row in batch["events"]])
+            evidence["api_analysis_status"] = record["status"]
+            evidence["api_alignment"] = api_result.goal_alignment
+            evidence["api_usage_pattern"] = api_result.usage_pattern
+            if args.scenario == "related-chain": assert api_result.usage_pattern == "possible_chaining"
+            if args.scenario == "learning-only":
+                assert api_result.usage_pattern != "possible_chaining"
+                assert api_result.suggestion_comment is None
+
         invalid = query("fictional-invalid-token", batch["session_id"], generation)
         assert invalid.status_code == 200 and invalid.json()["output"] == {"error": "analysis_unavailable"}
         other_token = identity("signUp", {"email": "engine-other-" + secrets.token_hex(12) + "@example.invalid",

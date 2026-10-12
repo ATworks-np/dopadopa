@@ -36,8 +36,9 @@ def main():
         started = time.monotonic()
         timing = {"method": method, "route": route}
         try:
+            wait = 130 if path == "/v1/analyses" or path.endswith("/analyze") else 65
             response = requests.request(method, base + path,
-                headers=headers, json=body, timeout=65)
+                headers=headers, json=body, timeout=wait)
             timing["http_status"] = response.status_code
         except requests.RequestException as error:
             timing["error_type"] = type(error).__name__

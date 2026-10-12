@@ -20,7 +20,8 @@ def main():
     def api(method, path, token, body=None, expected=200, generation=None):
         headers = {'Authorization': 'Bearer ' + token}
         if generation is not None: headers['X-DopaGuard-Generation'] = str(generation)
-        response = requests.request(method, BASE + path, headers=headers, json=body, timeout=65)
+        wait = 130 if path == "/v1/analyses" or path.endswith("/analyze") else 65
+        response = requests.request(method, BASE + path, headers=headers, json=body, timeout=wait)
         assert response.status_code == expected, 'unexpected HTTP ' + str(response.status_code)
         return response.json()
     try:

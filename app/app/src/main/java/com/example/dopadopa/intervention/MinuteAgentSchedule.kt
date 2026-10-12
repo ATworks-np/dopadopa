@@ -8,17 +8,25 @@ class MinuteAgentSchedule {
         private set
     private var key: String? = null
     private var nextAt: Long? = null
+    private var intervalMs = 60_000L
 
-    fun tick(currentKey: String?, busy: Boolean, now: Long): Boolean {
+    fun tick(currentKey: String?, busy: Boolean, now: Long, intervalMs: Long = 60_000L): Boolean {
+        val interval = intervalMs.coerceIn(60_000L, 20 * 60_000L)
         if (currentKey != key) {
             key = currentKey; epoch++
+            this.intervalMs = interval
             startedAt = if (currentKey == null) null else now
-            nextAt = startedAt?.plus(60_000)
+            nextAt = startedAt?.plus(interval)
+        } else if (interval != this.intervalMs && startedAt != null) {
+            this.intervalMs = interval
+            val elapsed = now - startedAt!!
+            nextAt = if (elapsed < interval) startedAt!! + interval
+                else startedAt!! + (elapsed / interval + 1) * interval
         }
         val start = startedAt ?: return false
         val due = nextAt ?: return false
         if (now < due) return false
-        nextAt = start + ((now - start) / 60_000 + 1) * 60_000
+        nextAt = start + ((now - start) / interval + 1) * interval
         return !busy
     }
 

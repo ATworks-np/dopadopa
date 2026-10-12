@@ -24,7 +24,7 @@ DIAGNOSTIC_STAGES = {"configuration", "service_credentials", "engine_transport",
     "model_execution", "model_deadline", "result_validation", "generation_validation", "trace_validation",
     "local_runner"}
 ALIGNMENTS = {"unknown", "aligned", "possibly_diverged"}
-TOOL_NAMES = {"get_user_goals", "get_timeline", "get_click_events", "get_past_feedback"}
+TOOL_NAMES = {"get_user_goals", "get_timeline", "get_content_events", "get_click_events", "get_past_feedback"}
 
 def diagnostic_stage(runner):
     stage = getattr(runner, "failure_stage", "local_runner")
@@ -272,7 +272,7 @@ def analyze_live(snapshot_id: str, uid=Depends(authenticated_user), store=Depend
         if result.session_id != source["session_id"] or result.analysis_id != aid or result.data_origin != record["data_origin"]:
             raise ValueError("analysis binding mismatch")
         result.validate_evidence([Event.model_validate(e) for e in read_snapshot(store, uid, snapshot_id)["events"]])
-        if not {"get_user_goals", "get_timeline", "get_click_events"} <= {r["tool"] for r in trace}:
+        if not {"get_user_goals", "get_timeline"} <= {r["tool"] for r in trace} or not {"get_content_events", "get_click_events"} & {r["tool"] for r in trace}:
             raise ValueError("required evidence investigation missing")
         status = "insufficient_data" if result.goal_alignment == "unknown" and not result.segments else "completed"
         record.update(status=status, result=result.model_dump(mode="json"), trace=trace, evidence_validated=True)
@@ -281,7 +281,10 @@ def analyze_live(snapshot_id: str, uid=Depends(authenticated_user), store=Depend
     except Exception:
         # Fixed diagnostics only. No model/provider exception or observation text is retained.
         stage = diagnostic_stage(locals().get("runner"))
-        log.warning("live_analysis_failure stage=%s", stage)
+        http_status = getattr(locals().get("runner"), "engine_http_status", None)
+        http_status = http_status if type(http_status) is int and 100 <= http_status <= 599 else None
+        log.warning("live_analysis_failure stage=%s http_status=%s", stage, http_status)
+        if http_status is not None: record["engine_http_status"] = http_status
         record.update(status="failed", error="analysis unavailable", trace=[], diagnostic_stage=stage)
     store.finish_live_analysis(uid, snapshot_id, record, generation)
     return record

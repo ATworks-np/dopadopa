@@ -1,0 +1,28 @@
+{
+  "status": "passed",
+  "data_origin": "sample",
+  "resource_name": "projects/463106527119/locations/asia-northeast1/reasoningEngines/8372512764677062656",
+  "started_at": "2026-10-12T07:01:14.253933+00:00",
+  "scenario": "related-chain",
+  "screen_titles_only": true,
+  "goal_alignment": "aligned",
+  "usage_pattern": "possible_chaining",
+  "tools": [
+    "get_content_events",
+    "get_timeline",
+    "get_user_goals"
+  ],
+  "evidence_valid": true,
+  "chain_evidence_count": 8,
+  "title_evidence_used": true,
+  "api_analysis_status": "completed",
+  "api_alignment": "aligned",
+  "api_usage_pattern": "possible_chaining",
+  "boundary_checks": [
+    "invalid Firebase token rejected",
+    "other authenticated owner cannot investigate session",
+    "stale generation rejected before model"
+  ],
+  "other_account_cleaned": true,
+  "temporary_account_cleaned": true
+}

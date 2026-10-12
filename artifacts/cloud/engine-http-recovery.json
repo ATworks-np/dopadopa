@@ -1,0 +1,17 @@
+{
+  "ticket": "DG-303",
+  "revision": "dopaguard-api-http-recovery-1620",
+  "traffic_percent": 100,
+  "server_tests": 90,
+  "status": "deployed",
+  "sample_api_analysis": "completed",
+  "full_boundary_smoke": "failed_read_timeout",
+  "real_failure_root_cause": "http_rejection_status_unavailable",
+  "retryable_http_statuses": [
+    429,
+    502,
+    503,
+    504
+  ],
+  "max_attempts": 2
+}

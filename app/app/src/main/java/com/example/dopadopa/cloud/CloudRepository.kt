@@ -17,6 +17,8 @@ import javax.net.ssl.HttpsURLConnection
 data class LiveCloudBinding(val uid: String, val revision: String, val goalRevision: String, val since: Long,
     val cancellationEpoch: Long = CloudRepository.epoch())
 
+class CloudHttpFailure(val statusCode: Int) : RuntimeException("cloud request failed")
+
 /** Network waits never occupy the collector executor. No tokens or content are logged. */
 class CloudRepository(context: Context,
     private val tokenSource: (FirebaseUser) -> String = { user ->
@@ -208,10 +210,11 @@ class CloudRepository(context: Context,
         }
         try {
             connection.requestMethod = method
-            connection.connectTimeout = 10_000
-            // Cloud Run may use its full 60-second request budget, including
+            val analysis = path == "/v1/analyses" || path.endsWith("/analyze")
+            connection.connectTimeout = if (analysis) 20_000 else 10_000
+            // Cloud Run may use its full 120-second request budget, including
             // remote Engine startup. Allow its response to arrive before giving up.
-            connection.readTimeout = if (path == "/v1/usage-consultation") 35_000 else if (path == "/v1/analyses" || path.endsWith("/analyze")) 65_000 else 15_000
+            connection.readTimeout = if (path == "/v1/usage-consultation") 35_000 else if (analysis) 130_000 else 15_000
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("Authorization", "Bearer $token")
             connection.setRequestProperty("Content-Type", "application/json")
@@ -225,7 +228,8 @@ class CloudRepository(context: Context,
                 require(live == null || liveAuthorized(live))
                 connection.outputStream.use { it.write(bytes) }
             }
-            require(connection.responseCode in 200..299) { "cloud request failed" }
+            val statusCode = connection.responseCode
+            if (statusCode !in 200..299) throw CloudHttpFailure(statusCode)
             val content = connection.inputStream.use { input ->
                 val output = java.io.ByteArrayOutputStream()
                 val buffer = ByteArray(8192)

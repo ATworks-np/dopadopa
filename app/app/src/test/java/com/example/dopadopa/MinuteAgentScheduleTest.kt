@@ -29,6 +29,15 @@ class MinuteAgentScheduleTest {
         assertFalse(s.tick("owner-b", false, 119_999))
         assertTrue(s.tick("owner-b", false, 120_000))
     }
+    @Test fun configuredIntervalReplacesTheOneMinuteGridWithoutRestartingTheEpoch() {
+        val s = MinuteAgentSchedule(); s.tick("youtube", false, 0, 60_000)
+        val epoch = s.epoch
+        assertFalse(s.tick("youtube", false, 30_000, 120_000))
+        assertEquals(epoch, s.epoch)
+        assertTrue(s.tick("youtube", false, 120_000, 120_000))
+        assertFalse(s.tick("youtube", false, 180_000, 120_000))
+        assertTrue(s.tick("youtube", false, 240_000, 120_000))
+    }
     @Test fun preparationJitterDefersJustEnoughInsteadOfSkippingAWholeMinute() {
         val s = MinuteAgentSchedule(); s.tick("youtube", false, 0)
         assertTrue(s.tick("youtube", false, 60_000))

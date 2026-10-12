@@ -1,59 +1,66 @@
 package com.example.dopadopa.intervention
 
 import android.accessibilityservice.AccessibilityService
-import android.graphics.Color
 import android.graphics.PixelFormat
+import android.os.Build
 import android.view.Gravity
+import android.view.View
 import android.view.WindowManager
-import android.widget.*
+import android.widget.TextView
 
 /** Actions are invoked only by explicit button clicks, never by display/update. */
 class InterventionOverlay(private val service: AccessibilityService) {
     private val manager = service.getSystemService(WindowManager::class.java)
-    private var root: ScrollView? = null
-    private var title: TextView? = null
+    private var root: View? = null
+    private var clock: TextView? = null
+    private var ring: PauseRing? = null
     private var mode: String? = null
+    private var night: Boolean? = null
     fun suggestion(comment: String, explanation: String, choose: (String) -> Unit): Boolean {
-        if (mode == "suggestion") return true
-        return show("suggestion", "AIからの提案（仮説）\n" + comment.filter { !it.isISOControl() || it == '\n' }.take(300), listOf(
-            "10分休む" to { choose("pause") }, "このまま続ける" to { choose("continue") },
-            "目的に沿っている" to { choose("correct") }, "判断できない" to { choose("unknown") },
-            "自動提案を停止" to { choose("stop") }, "閉じる" to { choose("dismiss") }
-        ), explanation)
-    }
-    fun pause(seconds: Long, release: () -> Unit, home: () -> Unit) {
-        val text = "本人が選んだ休止中 · 残り ${seconds / 60}分${seconds % 60}秒"
-        if (mode == "pause") { title?.text = text; return }
-        show("pause", text, listOf("今すぐ解除" to release, "ホームへ戻る" to home))
-    }
-    private fun show(kind: String, text: String, actions: List<Pair<String, () -> Unit>>, evidence: String? = null): Boolean {
+        val colors = OverlayColors.of(service)
+        if (mode == "suggestion" && night == colors.night) return true
         hide()
-        val panel = LinearLayout(service).apply {
-            orientation = LinearLayout.VERTICAL; setPadding(24, 24, 24, 24); setBackgroundColor(Color.rgb(25, 30, 42))
-        }
-        val heading = TextView(service).apply { this.text = text; textSize = 18f; setTextColor(Color.WHITE) }
-        panel.addView(heading)
-        if (evidence != null) {
-            val details = TextView(service).apply {
-                this.text = evidence.filter { !it.isISOControl() || it == '\n' }.take(1200)
-                textSize = 16f; setPadding(0, 16, 0, 16); setTextColor(Color.WHITE); visibility = android.view.View.GONE
-            }
-            panel.addView(Button(service).apply { this.text = "理由を見る"; setOnClickListener {
-                details.visibility = if (details.visibility == android.view.View.GONE) android.view.View.VISIBLE else android.view.View.GONE
-                this.text = if (details.visibility == android.view.View.VISIBLE) "理由を閉じる" else "理由を見る"
-            } })
-            panel.addView(details)
-        }
-        actions.forEach { (label, action) -> panel.addView(Button(service).apply { this.text = label; setOnClickListener { action() } }) }
-        val scroll = ScrollView(service).apply { addView(panel) }
+        val panel = SuggestionCard.create(service, comment, explanation, choose)
         val density = service.resources.displayMetrics.density
-        val params = WindowManager.LayoutParams((300 * density).toInt(),
-            minOf((540 * density).toInt(), service.resources.displayMetrics.heightPixels * 3 / 4),
+        val width = minOf((360 * density).toInt(), service.resources.displayMetrics.widthPixels - (32 * density).toInt())
+        val params = WindowManager.LayoutParams(width, WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT).apply { gravity = Gravity.CENTER }
-        if (runCatching { manager.addView(scroll, params) }.isFailure) return false
-        root = scroll; title = heading; mode = kind
+            PixelFormat.TRANSLUCENT).apply {
+                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL; y = (24 * density).toInt()
+            }
+        if (runCatching { manager.addView(panel, params) }.isFailure) return false
+        root = panel; mode = "suggestion"; night = colors.night
         return true
     }
-    fun hide() { root?.let { runCatching { manager.removeViewImmediate(it) } }; root = null; title = null; mode = null }
+    fun pause(seconds: Long, home: () -> Unit) {
+        val colors = OverlayColors.of(service)
+        if (mode == "pause" && night == colors.night) {
+            PauseScreen.update(clock, ring, seconds)
+            return
+        }
+        hide()
+        val screen = PauseScreen.create(service, seconds, home)
+        val params = WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT).apply {
+            gravity = Gravity.TOP or Gravity.START
+            if (Build.VERSION.SDK_INT >= 28) layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+        if (runCatching { manager.addView(screen.root, params) }.isFailure) return
+        root = screen.root
+        clock = screen.clock
+        ring = screen.ring
+        mode = "pause"
+        night = colors.night
+    }
+    fun hide() {
+        root?.let { runCatching { manager.removeViewImmediate(it) } }
+        root = null
+        clock = null
+        ring = null
+        mode = null
+        night = null
+    }
 }

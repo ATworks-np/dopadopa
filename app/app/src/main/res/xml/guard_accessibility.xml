@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeViewClicked|typeViewScrolled|typeWindowStateChanged"
+    android:accessibilityEventTypes="typeViewClicked|typeViewScrolled|typeWindowStateChanged|typeWindowContentChanged|typeViewAccessibilityFocused|typeViewSelected"
     android:packageNames="com.google.android.youtube"
-    android:accessibilityFeedbackType="feedbackGeneric"
-    android:notificationTimeout="200"
+    android:accessibilityFeedbackType="feedbackVisual"
+    android:notificationTimeout="0"
+    android:accessibilityFlags="flagReportViewIds|flagIncludeNotImportantViews|flagRetrieveInteractiveWindows"
     android:canRetrieveWindowContent="true"
     android:isAccessibilityTool="false"
     android:description="@string/collector_description" />

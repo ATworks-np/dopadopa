@@ -21,9 +21,7 @@ class ScriptedModel(BaseLlm):
         self.step += 1
         if self.step == 1 and not self.omit_tools:
             parts = [types.Part.from_function_call(name=name, args={"session_id":"s1"})
-                for name in ("get_user_goals", "get_timeline", "get_click_events")]
-        elif self.step == 2 or self.omit_tools:
-            parts = [types.Part.from_text(text="調査済み。意図は不明。")]
+                for name in ("get_user_goals", "get_timeline", "get_content_events")]
         else:
             result = analysis()
             if self.fabricate:
@@ -39,7 +37,9 @@ class AdkTest(unittest.TestCase):
         self.store = MemoryStore()
         self.store.put("alice", "sessions", "s1", {"user_goal":"学ぶ", "events":[event().model_dump(mode="json")]})
     def test_actual_adk_runner_executes_scoped_tools(self):
-        result, trace = AdkBehaviorRunner(self.store, ScriptedModel()).run("alice", "s1", "a1")
+        model = ScriptedModel()
+        result, trace = AdkBehaviorRunner(self.store, model).run("alice", "s1", "a1")
+        self.assertEqual(2, model.step)
         self.assertEqual("unknown", result.goal_alignment)
         self.assertEqual(3, len(trace))
         self.assertNotIn("Kotlin", str(trace))
@@ -60,6 +60,53 @@ class AdkTest(unittest.TestCase):
     def test_final_validation_rejects_confirmation_false(self):
         with self.assertRaises(ValueError):
             AdkBehaviorRunner(self.store, ScriptedModel(omit_confirmation=True)).run("alice", "s1", "a1")
+
+    def test_repairs_evidence_with_feedback_in_same_session(self):
+        model = RepairModel(failure="evidence")
+        result, trace = AdkBehaviorRunner(self.store, model).run("alice", "s1", "a1")
+        self.assertEqual(3, model.step)
+        self.assertTrue(model.saw_feedback)
+        self.assertEqual([], result.transitions)
+        self.assertEqual(3, len(trace))
+
+    def test_repairs_authoritative_and_provider_schema_failures(self):
+        for failure in ("confirmation", "schema", "identity", "missing_tools"):
+            with self.subTest(failure=failure):
+                model = RepairModel(failure=failure)
+                result, trace = AdkBehaviorRunner(self.store, model).run("alice", "s1", "a1")
+                self.assertTrue(model.saw_feedback)
+                self.assertTrue(result.user_confirmation_required)
+                self.assertEqual(3, len(trace))
+
+    def test_persistent_failure_stops_after_two_repairs_and_cleans_session(self):
+        model = ScriptedModel(fabricate=True)
+        service = TrackingSessions()
+        runner = AdkBehaviorRunner(self.store, model)
+        with patch('google.adk.sessions.InMemorySessionService', return_value=service):
+            with self.assertRaisesRegex(ValueError, 'fabricated transition'):
+                runner.run('alice', 's1', 'a1')
+        self.assertEqual(4, model.step)
+        self.assertEqual('result_validation', runner.failure_stage)
+        self.assertEqual(1, service.deleted)
+
+    def test_deadline_covers_repairs_too(self):
+        model = RepairModel(failure="evidence", wait_on_repair=True)
+        with self.assertRaises(TimeoutError):
+            AdkBehaviorRunner(self.store, model, timeout_seconds=0.05).run('alice', 's1', 'a1')
+        self.assertTrue(model.saw_feedback)
+
+    def test_repairs_share_model_call_budget(self):
+        from google.adk.agents.invocation_context import LlmCallsLimitExceededError
+        model = RepairBudgetModel()
+        with self.assertRaises(LlmCallsLimitExceededError):
+            AdkBehaviorRunner(self.store, model).run('alice', 's1', 'a1')
+        self.assertEqual(8, model.step)
+
+    def test_deletion_before_repair_prevents_further_model_calls(self):
+        model = RepairDeletingModel(store=self.store)
+        with self.assertRaises(PermissionError):
+            AdkBehaviorRunner(self.store, model).run('alice', 's1', 'a1')
+        self.assertEqual(2, model.step)
 
     def test_deadline_cancels_model_and_removes_transient_session(self):
         model = WaitingModel()
@@ -107,6 +154,35 @@ class BurstModel(BaseLlm):
         yield LlmResponse(content=types.Content(role='model', parts=[
             types.Part.from_function_call(name='get_timeline', args={'session_id':'s1'}) for _ in range(13)]))
 
+class RepairModel(BaseLlm):
+    model: str = 'repair-model-test'
+    step: int = 0
+    failure: str
+    saw_feedback: bool = False
+    wait_on_repair: bool = False
+
+    async def generate_content_async(self, llm_request, stream=False):
+        import json
+        self.step += 1
+        text = '\n'.join(p.text for c in llm_request.contents for p in c.parts or [] if p.text)
+        repairing = '検証エラー:' in text
+        if repairing:
+            self.saw_feedback = True
+            if self.wait_on_repair: await asyncio.Event().wait()
+        if (self.step == 1 and self.failure != 'missing_tools') or (repairing and self.failure == 'missing_tools' and self.step == 2):
+            parts = [types.Part.from_function_call(name=n, args={'session_id':'s1'})
+                for n in ('get_user_goals', 'get_timeline', 'get_content_events')]
+        else:
+            raw = analysis().model_dump()
+            if not repairing:
+                if self.failure == 'evidence':
+                    raw['transitions'] = [dict(at_event_id='fake', hypothesis='候補', evidence_ids=['fake'])]
+                elif self.failure == 'confirmation': raw['user_confirmation_required'] = False
+                elif self.failure == 'schema': raw['uncertainty'] = ''
+                elif self.failure == 'identity': raw['analysis_id'] = 'other'
+            parts = [types.Part.from_text(text=json.dumps(raw))]
+        yield LlmResponse(content=types.Content(role='model', parts=parts))
+
 class DeletingModel(ScriptedModel):
     store: Any
     async def generate_content_async(self, llm_request, stream=False):
@@ -114,6 +190,25 @@ class DeletingModel(ScriptedModel):
         if self.step == 1: self.store.delete_all('alice')
         async for response in super().generate_content_async(llm_request, stream):
             yield response
+
+class RepairDeletingModel(ScriptedModel):
+    store: Any
+    fabricate: bool = True
+    async def generate_content_async(self, llm_request, stream=False):
+        async for response in super().generate_content_async(llm_request, stream):
+            if self.step == 2: self.store.delete_all('alice')
+            yield response
+
+class RepairBudgetModel(ScriptedModel):
+    async def generate_content_async(self, llm_request, stream=False):
+        if self.step < 6:
+            self.step += 1
+            names = ('get_user_goals', 'get_content_events') if self.step == 1 else ('get_timeline',)
+            yield LlmResponse(content=types.Content(role='model', parts=[
+                types.Part.from_function_call(name=n, args={'session_id':'s1'}) for n in names]))
+        else:
+            self.fabricate = True
+            async for response in super().generate_content_async(llm_request, stream): yield response
 
 class WaitingModel(BaseLlm):
     model: str = 'waiting-model-test'

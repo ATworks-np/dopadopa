@@ -1,36 +1,29 @@
 package com.example.dopadopa
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.test.core.app.ActivityScenario
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.compose.ui.test.junit4.createComposeRule
+import com.example.dopadopa.ui.GoalSelection
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 
+/** Exercises selection without clearing device preferences, saving goals, or calling APIs. */
 class OnboardingTest {
-    @get:Rule val compose = createEmptyComposeRule()
+    @get:Rule val compose = createComposeRule()
 
-    @Test fun confirmedGoalAndSeparateConsent() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val prefs = context.getSharedPreferences("guard", 0)
-        prefs.edit().clear().commit()
-        ActivityScenario.launch(MainActivity::class.java).use {
-            assertFalse(prefs.getBoolean("collection_consent", false))
-            compose.onNodeWithText("Instagram / X / TikTok — 今後対応予定").assertExists().assertHasNoClickAction()
-            compose.onAllNodes(isToggleable())[0].performClick()
-            compose.onNodeWithText("このゴールを確認して次へ").performScrollTo().performClick()
-            compose.waitUntil(10_000) { prefs.getBoolean("goal_confirmed", false) }
-            compose.onNodeWithText("確認済みのゴール").assertExists()
-            assertFalse(prefs.getBoolean("collection_consent", false))
-            assertFalse(prefs.getBoolean("cloud_consent", false))
-            // The first toggle on the confirmed screen controls local collection only.
-            compose.onAllNodes(isToggleable())[0].performScrollTo().performClick()
-            compose.waitUntil { prefs.getBoolean("collection_consent", false) }
-            assertFalse(prefs.getBoolean("cloud_consent", false))
-            compose.onNodeWithText("収集とクラウド同意を撤回").performScrollTo().performClick()
-            compose.waitUntil { !prefs.getBoolean("collection_consent", false) }
-            assertFalse(prefs.getBoolean("cloud_consent", false))
-        }
+    @Test fun multipleGoalsRequireExplicitSave() {
+        var saved: Set<String>? = null
+        compose.setContent { MaterialTheme { Column { GoalSelection(saving = false) { saved = it } } } }
+        compose.onNodeWithText("保存する").assertIsNotEnabled()
+        compose.onAllNodes(isToggleable()).assertCountEquals(5)
+        compose.onNodeWithText("学習・スキルアップ").performClick()
+        compose.onNodeWithText("休憩・気分転換").performClick()
+        compose.onNodeWithText("学習・スキルアップ").assertIsOn()
+        compose.onNodeWithText("休憩・気分転換").assertIsOn()
+        assertNull(saved)
+        compose.onNodeWithText("保存する").performClick()
+        compose.runOnIdle { assertEquals(setOf("学習・スキルアップ", "休憩・気分転換"), saved) }
     }
 }

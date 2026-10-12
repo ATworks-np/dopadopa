@@ -58,3 +58,6 @@ telemetry無効だけでは例外時のruntime stderrに引数が記録された
 内容は24時間のexpires_atを持ち、期限後の読み取りをAPI/Toolで拒否する。登録時の期限切れ掃除に加え、snapshots/live_analyses/live_actionsのFirestore TTLを設定する。TTLの物理削除は非同期で、24時間ちょうどの消去を保証しない。
 
 検証: server単体61件、実Firestoreの不変性/原子実行/回数/削除、検証タグの実Agent Engine分析はsampleでPASS。証拠はartifacts/cloud/live-*.json。初回のlive分析はfailed、再試験はcompletedで原因未特定。公開への切替とAndroid自動実行は別の検証を要する。
+
+## 2026-10-12 最新: 単一Agentとコンテンツ観測
+ADKは1つのLlmAgentでTool調査と構造化出力を行う。get_content_eventsはCLICKとWINDOW_CHANGEのラベル/タイトル・取得状態を返す。get_timelineは全イベントのメタデータのみ。文字付き画面変更も内容根拠にでき、クリック通知がなくても判断可能。表示タイトルをクリック/視聴した事実と解釈しない。詳細はdocs/process/EVENT_CONTRACT_2026-10-12.md。

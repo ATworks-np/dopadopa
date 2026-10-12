@@ -10,7 +10,8 @@ object AnalysisExplanation {
     fun render(goal: String, alignment: String, tools: List<Tool>, claims: List<Claim>,
                observations: List<Observation>, uncertainty: String): String {
         val names = mapOf("get_user_goals" to "本人のゴール", "get_timeline" to "操作の時系列",
-            "get_click_events" to "クリック観測", "get_past_feedback" to "本人の過去回答")
+            "get_content_events" to "クリック・表示コンテンツ観測", "get_click_events" to "クリック観測",
+            "get_past_feedback" to "本人の過去回答")
         val facts = observations.associateBy { it.id }
         return buildString {
             appendLine("分析の説明（AIの仮説・内部思考の記録ではありません）")

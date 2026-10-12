@@ -4,6 +4,8 @@ data class TextObservation(val text: String?, val status: String, val source: St
     companion object {
         fun missing() = TextObservation(null, "missing", "none", "unavailable")
         fun redacted() = TextObservation(null, "redacted", "none", "unavailable")
+        fun fromDescription(text: String?, source: String): TextObservation =
+            from(text?.lineSequence()?.firstOrNull { it.isNotBlank() }, source)
         fun from(text: String?, source: String): TextObservation {
             val value = text?.trim()?.takeIf { it.isNotEmpty() } ?: return missing()
             // Conservative minimization: do not retain likely identifiers, links or long prose.

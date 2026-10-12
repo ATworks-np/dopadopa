@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.SystemClock
 import android.util.Log
 import com.example.dopadopa.cloud.CloudRepository
+import com.example.dopadopa.cloud.CloudHttpFailure
 import com.example.dopadopa.cloud.LiveCloudBinding
 import com.example.dopadopa.data.*
 import com.google.firebase.auth.FirebaseAuth
@@ -34,6 +35,8 @@ class LiveAgentRuntime(
     private var lastStatus = "まだ分析していません"
     private var analysisLog = ""
     private var logLoaded = false
+    private var lastEligible = false
+    private var runImmediately = false
     private val explanations = ArrayDeque<String>()
     private var pendingExplanation: String? = null
     var detail: String = "次の分析を待っています"
@@ -41,7 +44,20 @@ class LiveAgentRuntime(
 
     fun onClick() { sequence++ }
 
+    fun requestNow() {
+        if (destroyed) return
+        val wait = policy.nextAllowedStartElapsedMs() - SystemClock.elapsedRealtime()
+        if (activeId != null || wait > 0) {
+            lastStatus = if (activeId != null) "分析を実行中です" else "再分析できるまであと ${(wait + 999) / 1000} 秒です"
+            refresh()
+            return
+        }
+        runImmediately = true
+        refresh()
+    }
+
     fun tick(eligible: Boolean) {
+        lastEligible = eligible
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         val revision = prefs.getString("consent_revision", "").orEmpty()
         val goalRevision = prefs.getString("goal_revision", "").orEmpty()
@@ -50,8 +66,11 @@ class LiveAgentRuntime(
             "$uid:$revision:$goalRevision:$since" else null
         val oldEpoch = schedule.epoch
         val now = SystemClock.elapsedRealtime()
-        schedule.deferUntil(policy.nextAllowedStartElapsedMs())
-        val due = schedule.tick(key, activeId != null, now)
+        val interval = AnalysisInterval.millis(prefs.getInt(AnalysisInterval.KEY, AnalysisInterval.DEFAULT_MINUTES))
+        schedule.deferUntil(policy.nextAllowedStartElapsedMs(interval))
+        val due = schedule.tick(key, activeId != null, now, interval)
+        val immediate = runImmediately
+        runImmediately = false
         currentKey = key
         if (schedule.epoch != oldEpoch) {
             explanations.clear()
@@ -59,18 +78,23 @@ class LiveAgentRuntime(
             lastStatus = "この利用文脈ではまだ分析していません"
         }
         if (schedule.epoch != oldEpoch && activeId != null) CloudRepository.cancel()
+        val blockedNow = immediate && (key == null || activeId != null)
+        if (blockedNow) lastStatus = if (activeId != null) "分析を実行中です" else "今すぐ分析するには、YouTubeを開いたまま同意とログインを確認してください"
         detail = if (activeId != null) "直近の観測とゴールを分析しています。\n$lastStatus"
             else "次の分析まで ${schedule.remainingSeconds(now)} 秒\n$lastStatus"
+        detail += "\n分析の間隔: ${AnalysisInterval.minutes(prefs.getInt(AnalysisInterval.KEY, AnalysisInterval.DEFAULT_MINUTES))}分"
+        detail += "\n提案通知の間隔: ${SuggestionInterval.minutes(prefs.getInt(SuggestionInterval.KEY, SuggestionInterval.DEFAULT_MINUTES))}分"
         val logText = analysisLog()
         if (logText.isNotEmpty()) detail += "\n$logText"
         if (key != null && explanations.isNotEmpty())
             detail += "\n\n各回の分析説明（この利用文脈の直近8回）\n" + explanations.reversed().joinToString("\n\n")
-        if (!due || destroyed || uid == null) return
+        if (blockedNow || (!due && !immediate) || destroyed || uid == null) return
         val id = "live-" + UUID.randomUUID()
         activeId = id
         val epoch = schedule.epoch
         val started = schedule.startedAt ?: now
         val binding = LiveCloudBinding(uid, revision, goalRevision, since)
+        val immediateRequest = immediate
         // A real request starts here, including authentication and generation lookup.
         if (!AgentRunState.live.begin(id)) { activeId = null; return }
         prefs.edit().putLong("live_last_started_at", System.currentTimeMillis())
@@ -96,14 +120,13 @@ class LiveAgentRuntime(
                 }
                 handler.post {
                     if (!current(id, key, epoch)) { finish(id, lastStatus, "cancelled", "cancelled"); return@post }
-                    if (sequence != capturedSequence) { finish(id, "観測が更新されたため次の周期で分析します", "discarded", "discarded"); return@post }
                     if (prepared.isFailure) { finish(id, "観測がまだありません。次の周期で確認します", "no_observations", "no_observations"); return@post }
                     val (session, events, wall) = prepared.getOrThrow()
                     val snapshot = LiveSnapshot(id, LiveContext(uid, session.sessionId, revision, goalRevision,
                         generation.getOrThrow(), epoch), capturedSequence, started, SystemClock.elapsedRealtime(),
-                        events.map { it.eventId }.toSet(), events.filter { it.eventType == "CLICK" && it.textStatus == "available" }
+                        events.map { it.eventId }.toSet(), events.filter { it.eventType in setOf("CLICK", "WINDOW_CHANGE") && it.textStatus == "available" }
                             .map { it.eventId }.toSet(), true)
-                    if (!policy.reserve(snapshot, snapshot.context, sequence, ready, SystemClock.elapsedRealtime())) {
+                    if (!policy.reserve(snapshot, snapshot.context, sequence, ready, SystemClock.elapsedRealtime(), interval, immediateRequest)) {
                         finish(id, "次の分析周期を待っています", "skipped", "skipped"); return@post
                     }
                     val body = cloud.liveBody(id, session.sessionId, prefs.getString("goal", "").orEmpty(), binding,
@@ -120,12 +143,15 @@ class LiveAgentRuntime(
                         }.getOrNull()
                         handler.post received@{
                             refresh() // Re-read foreground, lock and sensitive-UI flags before accepting a result.
-                            if (!current(id, key, epoch) || snapshot.clickSequence != sequence ||
-                                latestSession != snapshot.context.sessionId ||
-                                SystemClock.elapsedRealtime() - snapshot.capturedElapsedMs > LiveAnalysisPolicy.RESULT_MAX_AGE_MS) {
-                                policy.finishFailure(id); finish(id, "古い分析結果を破棄しました", "discarded", "discarded"); return@received
+                            if (!current(id, key, epoch) || latestSession != snapshot.context.sessionId) {
+                                policy.finishFailure(id); finish(id, "利用終了または設定変更により分析を停止しました", "cancelled", "cancelled"); return@received
                             }
                             if (response.isFailure) {
+                                if ((response.exceptionOrNull() as? CloudHttpFailure)?.statusCode == 429) {
+                                    policy.finishFailure(id)
+                                    finish(id, "分析の実行間隔または回数の上限です。少し待ってから再実行してください", "skipped", "rate_limited")
+                                    return@received
+                                }
                                 policy.finishFailure(id); finish(id, "通信に失敗しました。次の周期で再試行します", "failed", "device_transport"); return@received
                             }
                             val value = response.getOrThrow()
@@ -141,24 +167,31 @@ class LiveAgentRuntime(
                             }
                             val result = validated.getOrThrow()
                             // No automatic restriction. Suggestion UI is connected separately in DG-304.
-                            val allowSuggestion = policy.finishAndAllowSuggestion(result, snapshot.context, sequence, ready, SystemClock.elapsedRealtime())
+                            val allowSuggestion = policy.finishAndAllowSuggestion(result, snapshot.context, sequence, ready, SystemClock.elapsedRealtime(),
+                                prefs.getInt(SuggestionInterval.KEY, SuggestionInterval.DEFAULT_MINUTES))
                             val alignment = value.getJSONObject("result").getString("goal_alignment")
                             val names = mutableListOf<String>()
                             val trace = value.getJSONArray("trace")
                             for (i in 0 until trace.length()) names.add(trace.getJSONObject(i).getString("tool"))
-                            val text = when (alignment) {
+                            val model = value.getJSONObject("result")
+                            val text = if (model.optString("usage_pattern", "unknown") == "possible_chaining")
+                                "前回: コンテンツを次々に開く連鎖の可能性（AIの仮説）" else when (alignment) {
                                 "aligned" -> "前回: ゴールと整合している可能性"
                                 "possibly_diverged" -> "前回: ゴールから離れた可能性（AIの仮説）"
                                 else -> "前回: 観測からは判断できません"
                             }
                             prefs.edit().putString("live_last_alignment", alignment)
                                 .putInt("live_last_tool_count", trace.length()).apply()
-                            val model = value.getJSONObject("result")
                             val toolDetails = (0 until trace.length()).map { i ->
                                 val row = trace.getJSONObject(i)
                                 AnalysisExplanation.Tool(row.getString("tool"), row.getInt("count"), row.getLong("elapsed_ms"))
                             }
                             val claims = mutableListOf<AnalysisExplanation.Claim>()
+                            if (model.optString("usage_pattern", "unknown") == "possible_chaining") {
+                                val ids = model.getJSONArray("usage_pattern_evidence_ids")
+                                claims.add(AnalysisExplanation.Claim("コンテンツを次々に開く連鎖の可能性。意図的な調べ物の可能性もあります",
+                                    (0 until ids.length()).map { ids.getString(it) }))
+                            }
                             for (section in listOf("segments", "transitions")) {
                                 val rows = model.getJSONArray(section)
                                 for (i in 0 until rows.length()) {
@@ -179,8 +212,7 @@ class LiveAgentRuntime(
                             finish(id, text, value.getString("status"), "unknown", alignment, AnalysisDiagnostics.tools(names))
                             val comment = model.optString("suggestion_comment", "").takeUnless { model.isNull("suggestion_comment") }.orEmpty()
                             if (allowSuggestion && comment.isNotBlank() && explanation.isNotBlank()) suggest(comment, explanation) {
-                                currentKey == key && schedule.epoch == epoch && sequence == snapshot.clickSequence &&
-                                    !destroyed && SystemClock.elapsedRealtime() - snapshot.capturedElapsedMs <= LiveAnalysisPolicy.RESULT_MAX_AGE_MS
+                                currentKey == key && schedule.epoch == epoch && !destroyed
                             }
                         }
                         }
@@ -211,9 +243,9 @@ class LiveAgentRuntime(
             result.getString("analysis_id") == value.getString("analysis_id") && result.getBoolean("user_confirmation_required"))
         val trace = value.getJSONArray("trace")
         require(trace.length() in 3..12)
-        require(setOf("get_user_goals", "get_timeline", "get_click_events").all { tool ->
-            (0 until trace.length()).any { trace.getJSONObject(it).getString("tool") == tool }
-        })
+        val tools = (0 until trace.length()).map { trace.getJSONObject(it).getString("tool") }.toSet()
+        require(tools.containsAll(setOf("get_user_goals", "get_timeline")) &&
+            tools.any { it in setOf("get_content_events", "get_click_events") })
         val evidence = mutableSetOf<String>()
         for (name in listOf("segments", "transitions")) {
             val rows = result.getJSONArray(name)
@@ -226,6 +258,14 @@ class LiveAgentRuntime(
             }
         }
         require(snapshot.eventIds.containsAll(evidence))
+        val usagePattern = result.optString("usage_pattern", "unknown")
+        require(usagePattern in setOf("possible_chaining", "no_clear_chaining", "unknown"))
+        val patternRows = result.optJSONArray("usage_pattern_evidence_ids")
+        val patternEvidence = if (patternRows == null) emptySet() else (0 until patternRows.length()).map { patternRows.getString(it) }.toSet()
+        if (usagePattern == "possible_chaining") {
+            require(patternEvidence.size in 3..10 && snapshot.availableContentEventIds.containsAll(patternEvidence))
+            evidence.addAll(patternEvidence)
+        } else require(patternEvidence.isEmpty())
         require(result.getString("goal_alignment") in setOf("unknown", "aligned", "possibly_diverged"))
         if (result.has("suggestion_reason") && !result.isNull("suggestion_reason")) {
             require(result.getString("suggestion_reason").isNotBlank() && result.getString("suggestion_reason").length <= 1200 &&
@@ -233,16 +273,18 @@ class LiveAgentRuntime(
         }
         if (result.has("suggestion_comment") && !result.isNull("suggestion_comment")) {
             val comment = result.getString("suggestion_comment")
-            require(comment.isNotBlank() && comment.length <= 300 && result.getString("goal_alignment") == "possibly_diverged")
+            require(comment.isNotBlank() && comment.length <= 300 &&
+                (result.getString("goal_alignment") == "possibly_diverged" || usagePattern == "possible_chaining"))
             val ids = result.getJSONArray("suggestion_evidence_ids")
             val commentEvidence = (0 until ids.length()).map { ids.getString(it) }.toSet()
             require(ids.length() in 1..10 && snapshot.eventIds.containsAll(commentEvidence) &&
-                commentEvidence.any { it in snapshot.availableClickEventIds })
+                commentEvidence.any { it in snapshot.availableContentEventIds })
+            if (usagePattern == "possible_chaining") require(commentEvidence.containsAll(patternEvidence))
         }
-        if (snapshot.availableClickEventIds.isEmpty()) require(result.getString("goal_alignment") == "unknown" && evidence.isEmpty() &&
+        if (snapshot.availableContentEventIds.isEmpty()) require(result.getString("goal_alignment") == "unknown" && evidence.isEmpty() &&
             result.getJSONArray("segments").length() == 0 && result.getJSONArray("transitions").length() == 0)
         return LiveAnalysisResult(snapshot.snapshotId, snapshot.context, snapshot.clickSequence, true,
-            result.getString("goal_alignment") == "possibly_diverged", true, evidence)
+            result.getString("goal_alignment") == "possibly_diverged", true, evidence, usagePattern == "possible_chaining")
     }
 
     private fun finish(id: String, status: String, code: String, stage: String = "unknown",
@@ -253,7 +295,7 @@ class LiveAgentRuntime(
         lastStatus = status
         if (currentKey != null) {
             explanations.addLast("${clockNow()} — $status\n" +
-                (pendingExplanation ?: "この回の判断説明はありません。状態: $code / 段階: $stage\n失敗・破棄から判断理由を推測しません。"))
+                (pendingExplanation ?: "この回の判断説明はありません。状態: $code / 段階: $stage\n失敗から判断理由を推測しません。"))
             while (explanations.size > 8) explanations.removeFirst()
         }
         pendingExplanation = null

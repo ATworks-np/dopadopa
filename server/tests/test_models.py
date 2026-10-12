@@ -13,6 +13,36 @@ def analysis(**changes):
         goal_alignment="unknown", uncertainty="意図は不明", user_confirmation_required=True, data_origin="sample") | changes)
 
 class ContractTest(unittest.TestCase):
+    def chain_events(self):
+        return [event(event_id=f"e{i}", text=title, event_type="WINDOW_CHANGE", source="parent_context",
+            observability="inferred", timestamp=f"2026-10-11T10:00:{i * 10:02d}+09:00")
+            for i, title in enumerate(("数学の面白い問題", "別解の裏技", "驚きの数学雑学"), 1)]
+
+    def test_aligned_content_chain_can_support_rest_suggestion(self):
+        events = self.chain_events()
+        result = analysis(goal_alignment="aligned", usage_pattern="possible_chaining",
+            usage_pattern_evidence_ids=["e1", "e2", "e3"],
+            segments=[dict(from_event_id="e1", to_event_id="e3", topic="数学", intent_hypothesis="学習の可能性", evidence_ids=["e1", "e2", "e3"])],
+            suggestion_comment="数学のタイトルが次々に表示されています。一区切りにしますか？",
+            suggestion_reason="学習の目標には合う内容ですが、連続した切り替えが観測されています。意図的な調べ物の可能性もあります。",
+            suggestion_evidence_ids=["e1", "e2", "e3"])
+        self.assertIs(result, result.validate_evidence(events))
+        self.assertEqual("aligned", result.goal_alignment)
+
+    def test_chain_cannot_be_fabricated_or_count_duplicate_titles(self):
+        result = analysis(usage_pattern="possible_chaining", usage_pattern_evidence_ids=["e1", "e2", "e3"])
+        events = self.chain_events()
+        for invalid in (events[:2], [e.model_copy(update={"text":"同じタイトル"}) for e in events],
+                [e.model_copy(update={"event_type":"SCROLL"}) for e in events]):
+            with self.assertRaises(ValueError): result.validate_evidence(invalid)
+        with self.assertRaises(ValueError): result.model_copy(update={"usage_pattern_evidence_ids":["fake", "e2", "e3"]}).validate_evidence(events)
+        with self.assertRaises(ValueError): analysis(usage_pattern_evidence_ids=["e1"]).validate_evidence(events)
+
+    def test_chaining_suggestion_requires_the_whole_chain_evidence(self):
+        result = analysis(usage_pattern="possible_chaining", usage_pattern_evidence_ids=["e1", "e2", "e3"],
+            suggestion_comment="休みますか？", suggestion_evidence_ids=["e1"])
+        with self.assertRaises(ValueError): result.validate_evidence(self.chain_events())
+
     def test_dynamic_comment_requires_real_reference_and_click(self):
         segment = dict(from_event_id="e1", to_event_id="e1", topic="話題", intent_hypothesis="休憩の可能性", evidence_ids=["e1"])
         value = analysis(goal_alignment="possibly_diverged", segments=[segment],
@@ -44,6 +74,17 @@ class ContractTest(unittest.TestCase):
             segments=[dict(from_event_id="e1", to_event_id="e1", topic="候補", intent_hypothesis="仮説", evidence_ids=["e1"])])
         value.validate_evidence([event()])
         self.assertEqual(reason, Analysis.model_validate_json(value.model_dump_json()).suggestion_reason)
+    def test_screen_title_without_click_supports_alignment_and_suggestion(self):
+        title = event(event_type="WINDOW_CHANGE", source="parent_context", observability="inferred")
+        value = analysis(goal_alignment="possibly_diverged", suggestion_comment="別のタイトルが表示されました。休みますか？",
+            suggestion_reason="表示されたタイトルに基づく仮説です。実際の視聴は未確認です。", suggestion_evidence_ids=["e1"],
+            segments=[dict(from_event_id="e1", to_event_id="e1", topic="候補", intent_hypothesis="仮説", evidence_ids=["e1"])])
+        self.assertIs(value.validate_evidence([title]), value)
+        for kind in ("SCROLL", "APP_FOREGROUND", "APP_BACKGROUND"):
+            with self.assertRaises(ValueError): value.validate_evidence([event(event_type=kind)])
+        with self.assertRaises(ValueError):
+            value.validate_evidence([event(event_type="WINDOW_CHANGE", text=None, text_status="missing", source="none", observability="unavailable")])
+
     def test_redacted_cannot_retain_text(self):
         with self.assertRaises(ValidationError): event(text_status="redacted")
     def test_timezone_required(self):

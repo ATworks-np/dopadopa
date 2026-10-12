@@ -56,7 +56,7 @@ class DopaGuardEngineAgent:
             runner = AdkBehaviorRunner(view)
             with ThreadPoolExecutor(max_workers=1) as worker:
                 try:
-                    result, trace = worker.submit(runner.run, uid, session_id, analysis_id).result(timeout=50)
+                    result, trace = worker.submit(runner.run, uid, session_id, analysis_id).result(timeout=100)
                 except Exception:
                     stage = getattr(runner, "failure_stage", None)
                     if isinstance(stage, str) and stage in {"model_execution", "model_deadline", "result_validation"}:

@@ -1,10 +1,10 @@
 # DopaGuard
 
 AndroidのYouTube利用中に自動分析し、ゴールから離れた可能性をオーバーレイで示し、本人が選んだ場合に解除可能な休止を行うMVP。
-現行要件は [要件定義v0.3](docs/requirements/REQUIREMENTS_v0.3.md)、新規開発はDG-300〜308。実機の1分周期の自動Agent分析と状態アイコンまで接続済み。休止提案・本人承認休止・解除は開発中。
+現行要件は [要件定義v0.3](docs/requirements/REQUIREMENTS_v0.3.md)。冒頭の「現行仕様」がコード照合済みの最新である。分析間隔は1〜20分、提案は続ける/休む、休止は10分で即時解除なし、状態は粒子表示。全体の実機受入と実Geminiでの修正成功確認は残る。
 開発指示・要件の正本は [docs/README.md](docs/README.md)。
 
-現在の状態は [最新引き継ぎ](docs/process/HANDOFF_2026-10-12_CURRENT.md) を最初に読む。別端末で再開する場合は [再開・引き継ぎ資料](docs/process/RESUME_ON_ANOTHER_MACHINE.md) も参照する。実機テストは再開済み。今後エミュレータは使用しない。
+現在の状態は [最新引き継ぎ](docs/process/HANDOFF_2026-10-12_CURRENT.md) を最初に読む。別端末で再開する場合は [再開・引き継ぎ資料](docs/process/RESUME_ON_ANOTHER_MACHINE.md) も参照する。未コミット/未追跡の変更がある。実機テストは再開済みだが、利用中のPixel 9aでinstrumentationは実行しない。エミュレータは使用しない。
 
 2026-10-11のスコープ変更: WebデモはMVP対象外。v0.3では利用中の自動監視→分析→提案→本人承認→休止/解除（RA-01〜09）を完成条件とする。AC-01〜06は既存基盤の証拠として保持する。
 

@@ -70,6 +70,8 @@ class Analysis(StrictModel):
     segments: list[Segment] = Field(max_length=30)
     transitions: list[Transition] = Field(max_length=30)
     goal_alignment: Literal["aligned", "possibly_diverged", "unknown"]
+    usage_pattern: Literal["possible_chaining", "no_clear_chaining", "unknown"] = "unknown"
+    usage_pattern_evidence_ids: list[str] = Field(default_factory=list, max_length=10)
     uncertainty: str = Field(min_length=1, max_length=1000)
     suggestion_comment: str | None = Field(default=None, min_length=1, max_length=300)
     suggestion_reason: str | None = Field(default=None, min_length=1, max_length=1200)
@@ -81,16 +83,27 @@ class Analysis(StrictModel):
         ordered = sorted(events, key=lambda e: (e.timestamp, e.event_id))
         positions = {e.event_id: i for i, e in enumerate(ordered)}
         ids = set(positions)
+        pattern_ids = set(self.usage_pattern_evidence_ids)
+        if self.usage_pattern == "possible_chaining":
+            observed = [e for e in ordered if e.event_id in pattern_ids and
+                e.event_type in {"CLICK", "WINDOW_CHANGE"} and e.text_status == "available"]
+            if not pattern_ids <= ids or len({e.event_id for e in observed}) != len(pattern_ids) or \
+                    len({e.text.strip() for e in observed}) < 3:
+                raise ValueError("chaining requires at least three distinct observed content titles")
+        elif pattern_ids:
+            raise ValueError("chaining evidence without a chaining hypothesis")
         if self.suggestion_reason is not None and (not self.suggestion_reason.strip() or self.suggestion_comment is None):
             raise ValueError("reason requires a suggestion comment")
         if self.suggestion_comment is not None:
-            if not self.suggestion_comment.strip() or self.goal_alignment != "possibly_diverged":
-                raise ValueError("suggestion requires a divergence hypothesis")
+            if not self.suggestion_comment.strip() or (self.goal_alignment != "possibly_diverged" and self.usage_pattern != "possible_chaining"):
+                raise ValueError("suggestion requires divergence or a chaining hypothesis")
+            if self.usage_pattern == "possible_chaining" and not pattern_ids <= set(self.suggestion_evidence_ids):
+                raise ValueError("chaining suggestion must include the observed chain evidence")
             if not self.suggestion_evidence_ids or not set(self.suggestion_evidence_ids) <= ids:
                 raise ValueError("suggestion requires observed evidence")
-            if not any(e.event_id in self.suggestion_evidence_ids and e.event_type == "CLICK" and
+            if not any(e.event_id in self.suggestion_evidence_ids and e.event_type in {"CLICK", "WINDOW_CHANGE"} and
                        e.text_status == "available" for e in events):
-                raise ValueError("suggestion requires available click evidence")
+                raise ValueError("suggestion requires available content evidence")
         elif self.suggestion_evidence_ids:
             raise ValueError("suggestion evidence without comment")
         if any(e.session_id != self.session_id or e.data_origin != self.data_origin for e in events):
@@ -105,7 +118,7 @@ class Analysis(StrictModel):
         for t in self.transitions:
             if t.at_event_id not in ids or not set(t.evidence_ids) <= ids:
                 raise ValueError("fabricated transition")
-        if not any(e.text_status == "available" and e.event_type == "CLICK" for e in events):
+        if not any(e.text_status == "available" and e.event_type in {"CLICK", "WINDOW_CHANGE"} for e in events):
             if self.goal_alignment != "unknown" or self.segments or self.transitions:
                 raise ValueError("insufficient observations must remain unknown")
         if self.goal_alignment != "unknown" and not self.segments:

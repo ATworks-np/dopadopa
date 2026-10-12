@@ -1,0 +1,15 @@
+{
+  "data_origin": "real",
+  "action": "manual overlay analyze",
+  "status": "insufficient_data",
+  "alignment": "unknown",
+  "required_tools_present": true,
+  "unit_tests": 62,
+  "unit_failures": 0,
+  "guard_bound": true,
+  "guard_crashed": false,
+  "http_analysis_counts_before_fix": {
+    "200": 4,
+    "429": 6
+  }
+}

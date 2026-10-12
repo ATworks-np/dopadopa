@@ -34,7 +34,7 @@ data class LiveSnapshot(
     val sessionStartedElapsedMs: Long,
     val capturedElapsedMs: Long,
     val eventIds: Set<String>,
-    val availableClickEventIds: Set<String>,
+    val availableContentEventIds: Set<String>,
     val realData: Boolean
 )
 
@@ -45,7 +45,8 @@ data class LiveAnalysisResult(
     val completed: Boolean,
     val possiblyDiverged: Boolean,
     val evidenceValidated: Boolean,
-    val evidenceIds: Set<String>
+    val evidenceIds: Set<String>,
+    val possiblyChaining: Boolean = false
 )
 
 /**
@@ -61,8 +62,6 @@ class LiveAnalysisPolicy {
         const val MIN_INTERVAL_MS = 60_000L
         const val HOUR_MS = 3_600_000L
         const val MAX_STARTS_PER_HOUR = 60
-        const val RESULT_MAX_AGE_MS = 60_000L
-        const val SUGGESTION_COOLDOWN_MS = 600_000L
     }
 
     private var active: LiveSnapshot? = null
@@ -71,7 +70,8 @@ class LiveAnalysisPolicy {
     private var lastSuggestion: Long? = null
     private var lastClock: Long? = null
 
-    @Synchronized fun nextAllowedStartElapsedMs(): Long = lastStart?.plus(MIN_INTERVAL_MS) ?: 0
+    @Synchronized fun nextAllowedStartElapsedMs(intervalMs: Long = MIN_INTERVAL_MS): Long =
+        lastStart?.plus(intervalMs.coerceIn(MIN_INTERVAL_MS, 20 * MIN_INTERVAL_MS)) ?: 0
 
     @Synchronized
     fun reserve(
@@ -79,26 +79,28 @@ class LiveAnalysisPolicy {
         currentContext: LiveContext,
         currentClickSequence: Long,
         eligibility: LiveEligibility,
-        nowElapsedMs: Long
+        nowElapsedMs: Long,
+        minimumIntervalMs: Long = MIN_INTERVAL_MS,
+        immediate: Boolean = false
     ): Boolean {
         if (!clockValid(nowElapsedMs) || !eligibility.ready || active != null) return false
         if (!validContext(snapshot.context) || snapshot.context != currentContext ||
-            snapshot.clickSequence != currentClickSequence || snapshot.clickSequence < 0 ||
+            snapshot.clickSequence < 0 ||
             snapshot.snapshotId.isBlank() || !snapshot.realData) return false
         if (snapshot.sessionStartedElapsedMs < 0 || snapshot.capturedElapsedMs < snapshot.sessionStartedElapsedMs ||
             snapshot.capturedElapsedMs > nowElapsedMs ||
-            nowElapsedMs - snapshot.sessionStartedElapsedMs < MIN_SESSION_MS ||
-            nowElapsedMs - snapshot.capturedElapsedMs > RESULT_MAX_AGE_MS) return false
+            !immediate && nowElapsedMs - snapshot.sessionStartedElapsedMs < MIN_SESSION_MS) return false
         if (snapshot.eventIds.size !in 1..100 || snapshot.eventIds.any { it.isBlank() } ||
-            !snapshot.eventIds.containsAll(snapshot.availableClickEventIds)) return false
-        if (lastStart?.let { nowElapsedMs - it < MIN_INTERVAL_MS } == true) return false
+            !snapshot.eventIds.containsAll(snapshot.availableContentEventIds)) return false
+        val interval = minimumIntervalMs.coerceIn(MIN_INTERVAL_MS, 20 * MIN_INTERVAL_MS)
+        if (lastStart?.let { nowElapsedMs - it < if (immediate) MIN_INTERVAL_MS else interval } == true) return false
         while (starts.isNotEmpty() && nowElapsedMs - starts.first() >= HOUR_MS) starts.removeFirst()
         if (starts.size >= MAX_STARTS_PER_HOUR) return false
         // Reserve the budget before transport. Failures count and are not retried immediately.
         starts.addLast(nowElapsedMs)
         lastStart = nowElapsedMs
         active = snapshot.copy(eventIds = snapshot.eventIds.toSet(),
-            availableClickEventIds = snapshot.availableClickEventIds.toSet())
+            availableContentEventIds = snapshot.availableContentEventIds.toSet())
         return true
     }
 
@@ -113,21 +115,22 @@ class LiveAnalysisPolicy {
         currentContext: LiveContext,
         currentClickSequence: Long,
         eligibility: LiveEligibility,
-        nowElapsedMs: Long
+        nowElapsedMs: Long,
+        suggestionIntervalMinutes: Int = SuggestionInterval.DEFAULT_MINUTES
     ): Boolean {
         val snapshot = active ?: return false
         if (result.snapshotId != snapshot.snapshotId || result.context != snapshot.context ||
             result.clickSequence != snapshot.clickSequence) return false
         active = null
         if (!clockValid(nowElapsedMs) || !eligibility.ready || !snapshot.realData ||
-            !result.completed || !result.possiblyDiverged || !result.evidenceValidated) return false
+            !result.completed || (!result.possiblyDiverged && !result.possiblyChaining) || !result.evidenceValidated) return false
         if (result.context != snapshot.context || currentContext != snapshot.context ||
-            result.clickSequence != snapshot.clickSequence || currentClickSequence != snapshot.clickSequence) return false
-        if (nowElapsedMs < snapshot.capturedElapsedMs ||
-            nowElapsedMs - snapshot.capturedElapsedMs > RESULT_MAX_AGE_MS) return false
+            result.clickSequence != snapshot.clickSequence) return false
+        if (nowElapsedMs < snapshot.capturedElapsedMs) return false
         if (result.evidenceIds.isEmpty() || !snapshot.eventIds.containsAll(result.evidenceIds) ||
-            result.evidenceIds.none { it in snapshot.availableClickEventIds }) return false
-        if (lastSuggestion?.let { nowElapsedMs - it < SUGGESTION_COOLDOWN_MS } == true) return false
+            result.evidenceIds.none { it in snapshot.availableContentEventIds }) return false
+        if (result.possiblyChaining && result.evidenceIds.count { it in snapshot.availableContentEventIds } < 3) return false
+        if (lastSuggestion?.let { nowElapsedMs - it < SuggestionInterval.millis(suggestionIntervalMinutes) } == true) return false
         // A failed overlay attempt also consumes cooldown; it must not produce a retry storm.
         lastSuggestion = nowElapsedMs
         return true
