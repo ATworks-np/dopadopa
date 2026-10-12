@@ -2,7 +2,7 @@
 
 > このファイルは `python docs/scripts/tickets.py board` で自動生成。直接編集しない。
 
-合計 **32** 件 / P0 **27** 件
+合計 **33** 件 / P0 **28** 件
 
 ## backlog (8)
 
@@ -51,7 +51,7 @@ _該当なし_
 
 _該当なし_
 
-## done (8)
+## done (9)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
@@ -63,3 +63,4 @@ _該当なし_
 | [DG-014](done/DG-014.md) | P0 | M5 | Cloud Run WebデモとAgentトレース可視化 | DG-010, DG-011 | Codex |
 | [DG-300](done/DG-300.md) | P0 | M6 | 利用中の自動提案を中心に要件v0.3へ再設計 | - | Codex |
 | [DG-301](done/DG-301.md) | P0 | M6 | 自動分析の起動条件と介入Policy | DG-300 | Codex |
+| [DG-310](done/DG-310.md) | P0 | M6 | 別LAN端末向けFirebase App Distribution配布 | - | Codex |

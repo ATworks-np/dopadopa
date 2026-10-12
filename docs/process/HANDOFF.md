@@ -387,3 +387,9 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - 本人要求により各回のTool操作、ゴール関係、根拠付き仮説、対応する観測、不確実性をoverlay詳細へ追加。説明はメモリ直近8回、文脈変更/サービス破棄で消去。診断ログに自由文は出さない。
 - 新formatter3件とAndroid全単体/assembleDebug成功。android-analysis-explanation-build.json参照。
 - 本人指示で今回はコード・ビルドまで。実機/エミュレータの使用、クラウド配置・新推論なし。実画面の受入は未確認、DG-309 in-progress。
+
+
+## 2026-10-12 DG-310 別LANへのAPK配布
+- 本人依頼でDG-309 APKをFirebase App Distributionへupload。release 5lr8509kenbe8。HTTP200の実ダウンロードと16780822bytes/ビルドSHA256一致を確認。app-distribution.json。
+- CLI保存認証401、OAuth quota未設定403を修正しdopadopaへ固定。認証・署名付きURLはGitへ保存しない。ANDROID_DISTRIBUTION.mdに再取得手順。
+- 招待メール宛先は本人回答待ち、未送信。直接ダウンロードURLを用意。実機インストール/表示確認なし。
