@@ -25,13 +25,14 @@ class GuardAccessibilityService : AccessibilityService() {
     private val prefs by lazy { getSharedPreferences("guard", MODE_PRIVATE) }
     private val pause = VoluntaryPause()
     private val intervention by lazy { InterventionOverlay(this) }
-    private var proposal: Pair<String, () -> Boolean>? = null
+    private data class Proposal(val comment: String, val explanation: String, val valid: () -> Boolean)
+    private var proposal: Proposal? = null
     private var safeForeground = false
     private fun pauseBinding(): String = "${FirebaseAuth.getInstance().currentUser?.uid}:" +
         "${prefs.getString("consent_revision", "")}:${prefs.getString("goal_revision", "")}:" +
         prefs.getLong("automatic_since", 0)
     private val liveRuntime by lazy { LiveAgentRuntime(applicationContext, handler, repository,
-        { refreshAgentStatus() }, { explanation, valid ->
+        { refreshAgentStatus() }, { comment, explanation, valid ->
             val now = System.currentTimeMillis()
             val last = prefs.getLong("suggestion_last_wall", 0)
             // A backwards wall-clock change suppresses for only one new cooldown window.
@@ -39,7 +40,7 @@ class GuardAccessibilityService : AccessibilityService() {
             if (safeForeground && pause.remaining(SystemClock.elapsedRealtime()) == 0L && valid() &&
                 (last == 0L || now >= last && now - last >= 600_000L)) {
                 prefs.edit().putLong("suggestion_last_wall", now).apply()
-                proposal = explanation to valid
+                proposal = Proposal(comment, explanation, valid)
                 refreshAgentStatus()
             }
         }) }
@@ -99,9 +100,9 @@ class GuardAccessibilityService : AccessibilityService() {
             return
         }
         val pending = proposal
-        if (pending != null && pending.second()) {
+        if (pending != null && pending.valid()) {
             statusOverlay.hide()
-            if (!intervention.suggestion(pending.first, ::choose)) proposal = null
+            if (!intervention.suggestion(pending.comment, pending.explanation, ::choose)) proposal = null
         } else {
             proposal = null; intervention.hide()
             val history = prefs.getString("intervention_history", "").orEmpty()
@@ -114,7 +115,7 @@ class GuardAccessibilityService : AccessibilityService() {
         val pending = proposal ?: return
         // Re-read foreground, consent, authentication, click sequence and freshness at click time.
         refreshAgentStatus()
-        if (!safeForeground || proposal !== pending || !pending.second()) return
+        if (!safeForeground || proposal !== pending || !pending.valid()) return
         proposal = null; intervention.hide()
         recordChoice(choice)
         when (choice) {

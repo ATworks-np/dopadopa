@@ -2,7 +2,7 @@
 
 > このファイルは `python docs/scripts/tickets.py board` で自動生成。直接編集しない。
 
-合計 **33** 件 / P0 **28** 件
+合計 **34** 件 / P0 **29** 件
 
 ## backlog (6)
 
@@ -19,7 +19,7 @@
 
 _該当なし_
 
-## in-progress (16)
+## in-progress (17)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
@@ -39,6 +39,7 @@ _該当なし_
 | [DG-306](in-progress/DG-306.md) | P0 | M6 | 自動提案の個別同意とゴール設定UI | DG-300 | Codex |
 | [DG-307](in-progress/DG-307.md) | P0 | M6 | 本人選択履歴と再起動・撤回の状態管理 | DG-302, DG-303, DG-304, DG-305 | Codex |
 | [DG-309](in-progress/DG-309.md) | P0 | M6 | 自動分析の操作・判断・根拠の説明表示 | - | Codex |
+| [DG-311](in-progress/DG-311.md) | P0 | M6 | 根拠と目標に応じたLLM休止提案コメント | - | Codex |
 
 ## blocked (2)
 

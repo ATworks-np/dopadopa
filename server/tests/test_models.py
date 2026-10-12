@@ -13,6 +13,24 @@ def analysis(**changes):
         goal_alignment="unknown", uncertainty="意図は不明", user_confirmation_required=True, data_origin="sample") | changes)
 
 class ContractTest(unittest.TestCase):
+    def test_dynamic_comment_requires_real_reference_and_click(self):
+        segment = dict(from_event_id="e1", to_event_id="e1", topic="話題", intent_hypothesis="休憩の可能性", evidence_ids=["e1"])
+        value = analysis(goal_alignment="possibly_diverged", segments=[segment],
+            suggestion_comment="学習が目標ですが、別の話題の項目をクリックしています。休憩の可能性もあります。少し休みますか？",
+            suggestion_evidence_ids=["e1"])
+        self.assertIs(value.validate_evidence([event()]), value)
+        with self.assertRaises(ValueError): value.model_copy(update={"suggestion_evidence_ids": ["fake"]}).validate_evidence([event()])
+        with self.assertRaises(ValueError): value.model_copy(update={"suggestion_evidence_ids": []}).validate_evidence([event()])
+
+    def test_comment_not_allowed_for_unknown_or_missing_click(self):
+        with self.assertRaises(ValueError):
+            analysis(suggestion_comment="休みますか？", suggestion_evidence_ids=["e1"]).validate_evidence([event()])
+        with self.assertRaises(ValidationError): analysis(suggestion_comment="x" * 301)
+
+    def test_old_result_can_be_read_without_generating_comment(self):
+        value = analysis().validate_evidence([event()])
+        self.assertIsNone(value.suggestion_comment)
+        self.assertEqual([], value.suggestion_evidence_ids)
     def test_redacted_cannot_retain_text(self):
         with self.assertRaises(ValidationError): event(text_status="redacted")
     def test_timezone_required(self):

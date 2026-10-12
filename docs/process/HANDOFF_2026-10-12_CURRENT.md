@@ -149,3 +149,7 @@ wrapperに実行bitがないため `bash ./gradlew` を使う。Pythonは3.13、
 ## 2026-10-12 招待制配布の追記
 
 本人の指定により直ダウンロードリンクは禁止。旧release 5lr8509kenbe8を削除しGET 404を確認。新release 4t4qnpquf0m08にDG-309 APKをアップロードし、atomic1017@gmail.comだけへの招待API成功。メール到着・招待承認・インストールは未確認。tools/distribute_android.pyは直リンクを出力せず、新uploadに--testerを必須とする。詳細はANDROID_DISTRIBUTION.mdとartifacts/cloud/app-distribution.json。実機・エミュレータ操作は行っていない。
+
+## DG-311: 動的な休止提案コメント
+
+固定の提案本文をLLM生成のsuggestion_commentへ変更。共通プロンプトは本人ゴール・具体的クリック根拠・意図的休憩の可能性・選択を委ねる日本語2〜3文を要求。suggestion_evidence_idsを別に検証し実在する取得可能クリックを必須とする。最大300文字/根拠10件。unknown/alignedはnull。旧結果は読み取り可能だがコメントなしではAndroidは提案しない。サーバー66件/Android44件PASS・assembleDebug成功。コードとビルドまで。公開Cloud RunとAgent Engineは旧コードのままなので、次は両方の配置更新が必要。実Geminiの動的文言と実機表示は未検証。以前の招待APKも未更新。

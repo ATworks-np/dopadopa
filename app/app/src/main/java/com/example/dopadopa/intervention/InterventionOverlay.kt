@@ -13,9 +13,9 @@ class InterventionOverlay(private val service: AccessibilityService) {
     private var root: ScrollView? = null
     private var title: TextView? = null
     private var mode: String? = null
-    fun suggestion(explanation: String, choose: (String) -> Unit): Boolean {
+    fun suggestion(comment: String, explanation: String, choose: (String) -> Unit): Boolean {
         if (mode == "suggestion") return true
-        return show("suggestion", "少し休みますか？\n目標から離れた可能性があります（AIの仮説）。", listOf(
+        return show("suggestion", "AIからの提案（仮説）\n" + comment.filter { !it.isISOControl() || it == '\n' }.take(300), listOf(
             "10分休む" to { choose("pause") }, "このまま続ける" to { choose("continue") },
             "目的に沿っている" to { choose("correct") }, "判断できない" to { choose("unknown") },
             "自動提案を停止" to { choose("stop") }, "閉じる" to { choose("dismiss") }

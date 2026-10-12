@@ -19,7 +19,7 @@ import java.util.concurrent.Executors
 class LiveAgentRuntime(
     context: Context, private val handler: Handler, private val repository: TimelineRepository,
     private val refresh: () -> Unit,
-    private val suggest: (String, () -> Boolean) -> Unit = { _, _ -> }
+    private val suggest: (String, String, () -> Boolean) -> Unit = { _, _, _ -> }
 ) {
     private val app = context.applicationContext
     private val prefs = app.getSharedPreferences("guard", Context.MODE_PRIVATE)
@@ -177,7 +177,8 @@ class LiveAgentRuntime(
                                 model.getString("uncertainty"))
                             val explanation = pendingExplanation.orEmpty()
                             finish(id, text, value.getString("status"), "unknown", alignment, AnalysisDiagnostics.tools(names))
-                            if (allowSuggestion) suggest(explanation) {
+                            val comment = model.optString("suggestion_comment", "").takeUnless { model.isNull("suggestion_comment") }.orEmpty()
+                            if (allowSuggestion && comment.isNotBlank()) suggest(comment, explanation) {
                                 currentKey == key && schedule.epoch == epoch && sequence == snapshot.clickSequence &&
                                     !destroyed && SystemClock.elapsedRealtime() - snapshot.capturedElapsedMs <= LiveAnalysisPolicy.RESULT_MAX_AGE_MS
                             }
@@ -226,6 +227,14 @@ class LiveAgentRuntime(
         }
         require(snapshot.eventIds.containsAll(evidence))
         require(result.getString("goal_alignment") in setOf("unknown", "aligned", "possibly_diverged"))
+        if (result.has("suggestion_comment") && !result.isNull("suggestion_comment")) {
+            val comment = result.getString("suggestion_comment")
+            require(comment.isNotBlank() && comment.length <= 300 && result.getString("goal_alignment") == "possibly_diverged")
+            val ids = result.getJSONArray("suggestion_evidence_ids")
+            val commentEvidence = (0 until ids.length()).map { ids.getString(it) }.toSet()
+            require(ids.length() in 1..10 && snapshot.eventIds.containsAll(commentEvidence) &&
+                commentEvidence.any { it in snapshot.availableClickEventIds })
+        }
         if (snapshot.availableClickEventIds.isEmpty()) require(result.getString("goal_alignment") == "unknown" && evidence.isEmpty() &&
             result.getJSONArray("segments").length() == 0 && result.getJSONArray("transitions").length() == 0)
         return LiveAnalysisResult(snapshot.snapshotId, snapshot.context, snapshot.clickSequence, true,

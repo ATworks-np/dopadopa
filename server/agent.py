@@ -17,6 +17,7 @@ UIをクリックした事実と、閲読・視線・動画を見た事実を混
 missing/redactedを補完しないでください。意図的な休憩の可能性を残してください。
 根拠は取得したevent_idのみ。観測不足ならgoal_alignment=unknown、segments/transitionsを空配列にしてください。
 user_confirmation_requiredは常にtrue。不確実性の説明を必須とします。
+goal_alignment=possibly_divergedの場合、suggestion_commentに本人へ表示する日本語の短い休止提案を必ず生成してください。本人のゴールと今回取得した具体的なクリック根拠に応じた2〜3文、300文字以内とし、何を観測してどう目標から離れた可能性があるかを説明し、意図的な休憩の可能性を残して「少し休みますか？」など選択を委ねてください。固定の汎用文だけにしないでください。責める表現・断定・命令・診断・未観測の視聴の断定は禁止です。suggestion_evidence_idsにこのコメントを支持する取得済みevent_idを入れ、取得できたクリック根拠を少なくとも1つ含めてください。aligned/unknownではsuggestion_comment=null、suggestion_evidence_ids=[]としてください。
 本人の訂正を自動作成したり、ゴールを書き換えたりしないでください。"""
 
 class ToolArgs(BaseModel):

@@ -71,6 +71,8 @@ class Analysis(StrictModel):
     transitions: list[Transition] = Field(max_length=30)
     goal_alignment: Literal["aligned", "possibly_diverged", "unknown"]
     uncertainty: str = Field(min_length=1, max_length=1000)
+    suggestion_comment: str | None = Field(default=None, min_length=1, max_length=300)
+    suggestion_evidence_ids: list[str] = Field(default_factory=list, max_length=10)
     user_confirmation_required: Literal[True]
     data_origin: Literal["sample", "real"]
 
@@ -78,6 +80,16 @@ class Analysis(StrictModel):
         ordered = sorted(events, key=lambda e: (e.timestamp, e.event_id))
         positions = {e.event_id: i for i, e in enumerate(ordered)}
         ids = set(positions)
+        if self.suggestion_comment is not None:
+            if not self.suggestion_comment.strip() or self.goal_alignment != "possibly_diverged":
+                raise ValueError("suggestion requires a divergence hypothesis")
+            if not self.suggestion_evidence_ids or not set(self.suggestion_evidence_ids) <= ids:
+                raise ValueError("suggestion requires observed evidence")
+            if not any(e.event_id in self.suggestion_evidence_ids and e.event_type == "CLICK" and
+                       e.text_status == "available" for e in events):
+                raise ValueError("suggestion requires available click evidence")
+        elif self.suggestion_evidence_ids:
+            raise ValueError("suggestion evidence without comment")
         if any(e.session_id != self.session_id or e.data_origin != self.data_origin for e in events):
             raise ValueError("analysis provenance mismatch")
         for s in self.segments:
