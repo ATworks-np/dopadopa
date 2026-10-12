@@ -1,4 +1,4 @@
-"""Upload the selected debug APK; credentials and signed download URLs stay out of Git."""
+"""Invitation-only APK distribution. Never print or persist direct download URLs."""
 import argparse
 import hashlib
 import json
@@ -18,6 +18,8 @@ def main():
     parser.add_argument("--check", action="store_true", help="Read the recorded upload without starting another")
     parser.add_argument("--tester", help="Explicitly authorized recipient; sends a Firebase invitation")
     args = parser.parse_args()
+    if not args.check and not args.tester:
+        parser.error("Invitation-only distribution requires an explicitly authorized --tester")
     token = subprocess.run([gcloud_executable(), "auth", "print-access-token", "--account=atomic1017@gmail.com"],
         capture_output=True, text=True, check=True).stdout.strip()
     session = requests.Session()
@@ -58,10 +60,9 @@ def main():
         call("POST", "/v1/" + release["name"] + ":distribute", json={"testerEmails": [args.tester]})
     state.update(status="uploaded", release_name=release["name"],
         firebase_console_uri=release.get("firebaseConsoleUri"), testing_uri=release.get("testingUri"),
-        tester_invited=bool(args.tester))
+        tester_invited=bool(args.tester) or state.get("tester_invited", False), distribution_policy="invitation_only")
     EVIDENCE.write_text(json.dumps(state, indent=2), encoding="utf-8")
     print(json.dumps(state))
-    # Signed APK access is deliberately excluded from persisted evidence.
-    print("download_url=" + release.get("binaryDownloadUri", ""))
+    # Firebase returns binaryDownloadUri, but direct links are prohibited here.
 
 if __name__ == "__main__": main()

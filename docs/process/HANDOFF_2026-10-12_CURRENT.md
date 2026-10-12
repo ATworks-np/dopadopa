@@ -135,3 +135,7 @@ JAVA_HOME='/Applications/Android Studio.app/Contents/jbr/Contents/Home' bash ./g
 wrapperに実行bitがないため `bash ./gradlew` を使う。Pythonは3.13、依存は `server/requirements.lock.txt`。別端末では実在するJDKとSDKのパスを使う。認証、秘密鍵、`.venv`、端末DBはリポジトリに含めない。
 
 実機へ入れ直す前に `adb devices` でserialを照合する。既存のinstrumentationテストをまとめて実行しない。DB、同意、ログインを変える試験がある。`tools.verify_live_api`、`tools.verify_live_firestore`、`tools.verify_cloud_api --engine-qa` は課金される実接続試験であり、保存済み証拠の閲覧とは分ける。
+
+## 2026-10-12 招待制配布の追記
+
+本人の指定により直ダウンロードリンクは禁止。旧release 5lr8509kenbe8を削除しGET 404を確認。新release 4t4qnpquf0m08にDG-309 APKをアップロードし、atomic1017@gmail.comだけへの招待API成功。メール到着・招待承認・インストールは未確認。tools/distribute_android.pyは直リンクを出力せず、新uploadに--testerを必須とする。詳細はANDROID_DISTRIBUTION.mdとartifacts/cloud/app-distribution.json。実機・エミュレータ操作は行っていない。

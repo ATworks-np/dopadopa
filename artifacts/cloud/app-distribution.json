@@ -3,9 +3,9 @@
   "apk_sha256": "4331f4e027f82744da2b7680164dc0837404345a04f70318f647c8a6b2012df1",
   "operation_name": "projects/463106527119/apps/1:463106527119:android:bec70e43d1f1dc528785fa/releases/-/operations/4331f4e027f82744da2b7680164dc0837404345a04f70318f647c8a6b2012df1",
   "status": "uploaded",
-  "release_name": "projects/463106527119/apps/1:463106527119:android:bec70e43d1f1dc528785fa/releases/5lr8509kenbe8",
-  "firebase_console_uri": "https://console.firebase.google.com/project/dopadopa/appdistribution/app/android:com.example.dopadopa/releases/5lr8509kenbe8",
-  "testing_uri": "https://appdistribution.firebase.google.com/testerapps/1:463106527119:android:bec70e43d1f1dc528785fa/releases/5lr8509kenbe8",
-  "tester_invited": false,
-  "download_sha256_verified": true
+  "release_name": "projects/463106527119/apps/1:463106527119:android:bec70e43d1f1dc528785fa/releases/4t4qnpquf0m08",
+  "firebase_console_uri": "https://console.firebase.google.com/project/dopadopa/appdistribution/app/android:com.example.dopadopa/releases/4t4qnpquf0m08",
+  "testing_uri": "https://appdistribution.firebase.google.com/testerapps/1:463106527119:android:bec70e43d1f1dc528785fa/releases/4t4qnpquf0m08",
+  "tester_invited": true,
+  "distribution_policy": "invitation_only"
 }
