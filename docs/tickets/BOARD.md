@@ -4,12 +4,10 @@
 
 合計 **33** 件 / P0 **28** 件
 
-## backlog (8)
+## backlog (6)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
-| [DG-305](backlog/DG-305.md) | P0 | M6 | 本人承認済みYouTube休止と解除 | DG-304 | unassigned |
-| [DG-307](backlog/DG-307.md) | P0 | M6 | 本人選択履歴と再起動・撤回の状態管理 | DG-302, DG-303, DG-304, DG-305 | unassigned |
 | [DG-308](backlog/DG-308.md) | P0 | M6 | 自動監視・提案・休止の実機E2E受入 | DG-303, DG-304, DG-305, DG-306, DG-307 | unassigned |
 | [DG-101](backlog/DG-101.md) | P1 | Future | コンテンツ表示時間（露出）の推定 | DG-006, DG-007 | unassigned |
 | [DG-102](backlog/DG-102.md) | P1 | Future | やさしい通知・続行確認UI | DG-011, DG-013 | unassigned |
@@ -21,7 +19,7 @@
 
 _該当なし_
 
-## in-progress (14)
+## in-progress (16)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
@@ -37,7 +35,9 @@ _該当なし_
 | [DG-302](in-progress/DG-302.md) | P0 | M6 | 利用中スナップショットAPIとAgent読み取り契約 | DG-300 | Codex |
 | [DG-303](in-progress/DG-303.md) | P0 | M6 | YouTube利用中の自動同期・Agent実行 | DG-301, DG-302, DG-306 | Codex |
 | [DG-304](in-progress/DG-304.md) | P0 | M6 | ゴール乖離候補のオーバーレイ提案 | DG-301, DG-306 | Codex |
+| [DG-305](in-progress/DG-305.md) | P0 | M6 | 本人承認済みYouTube休止と解除 | DG-304 | Codex |
 | [DG-306](in-progress/DG-306.md) | P0 | M6 | 自動提案の個別同意とゴール設定UI | DG-300 | Codex |
+| [DG-307](in-progress/DG-307.md) | P0 | M6 | 本人選択履歴と再起動・撤回の状態管理 | DG-302, DG-303, DG-304, DG-305 | Codex |
 | [DG-309](in-progress/DG-309.md) | P0 | M6 | 自動分析の操作・判断・根拠の説明表示 | - | Codex |
 
 ## blocked (2)

@@ -14,6 +14,8 @@ import com.example.dopadopa.cloud.CloudRepository
 import com.example.dopadopa.intervention.AgentRunState
 import com.example.dopadopa.intervention.AgentStatusOverlay
 import com.example.dopadopa.intervention.LiveAgentRuntime
+import com.example.dopadopa.intervention.InterventionOverlay
+import com.example.dopadopa.intervention.VoluntaryPause
 import com.google.firebase.auth.FirebaseAuth
 
 class GuardAccessibilityService : AccessibilityService() {
@@ -21,7 +23,26 @@ class GuardAccessibilityService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     private var lastScrollAt = 0L
     private val prefs by lazy { getSharedPreferences("guard", MODE_PRIVATE) }
-    private val liveRuntime by lazy { LiveAgentRuntime(applicationContext, handler, repository) { refreshAgentStatus() } }
+    private val pause = VoluntaryPause()
+    private val intervention by lazy { InterventionOverlay(this) }
+    private var proposal: Pair<String, () -> Boolean>? = null
+    private var safeForeground = false
+    private fun pauseBinding(): String = "${FirebaseAuth.getInstance().currentUser?.uid}:" +
+        "${prefs.getString("consent_revision", "")}:${prefs.getString("goal_revision", "")}:" +
+        prefs.getLong("automatic_since", 0)
+    private val liveRuntime by lazy { LiveAgentRuntime(applicationContext, handler, repository,
+        { refreshAgentStatus() }, { explanation, valid ->
+            val now = System.currentTimeMillis()
+            val last = prefs.getLong("suggestion_last_wall", 0)
+            // A backwards wall-clock change suppresses for only one new cooldown window.
+            if (last > now) prefs.edit().putLong("suggestion_last_wall", now).apply()
+            if (safeForeground && pause.remaining(SystemClock.elapsedRealtime()) == 0L && valid() &&
+                (last == 0L || now >= last && now - last >= 600_000L)) {
+                prefs.edit().putLong("suggestion_last_wall", now).apply()
+                proposal = explanation to valid
+                refreshAgentStatus()
+            }
+        }) }
     private val statusOverlay by lazy { AgentStatusOverlay(this) {
         synchronized(PrivacyGate.lock) {
             prefs.edit().putBoolean("automatic_consent", false).commit()
@@ -37,13 +58,21 @@ class GuardAccessibilityService : AccessibilityService() {
 
     private fun refreshAgentStatus() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (prefs.getString("intervention_history_owner", null) != uid) {
+            prefs.edit().remove("intervention_history").putString("intervention_history_owner", uid).apply()
+        }
+        if (prefs.getBoolean("pause_active", false) && prefs.getString("pause_binding", null) != pauseBinding())
+            releasePause("context_changed")
         val unlocked = !getSystemService(KeyguardManager::class.java).isKeyguardLocked &&
             getSystemService(PowerManager::class.java).isInteractive
         val ready = uid != null && prefs.getBoolean("goal_confirmed", false) &&
             prefs.getBoolean("collection_consent", false) && prefs.getBoolean("cloud_consent", false) &&
             prefs.getBoolean("automatic_consent", false) && prefs.getString("automatic_owner_uid", null) == uid &&
             prefs.getString("cloud_owner", uid) == uid && unlocked && repository.hasUsagePermission()
-        if (!ready) { liveRuntime.tick(false); statusOverlay.hide(); return }
+        if (!ready) {
+            safeForeground = false; proposal = null; releasePause("revoked")
+            liveRuntime.tick(false); statusOverlay.hide(); intervention.hide(); return
+        }
         val safeYoutube = runCatching {
             val root = rootInActiveWindow ?: return@runCatching false
             if (root.packageName?.toString() != YouTubeAdapter.PACKAGE) return@runCatching false
@@ -58,8 +87,64 @@ class GuardAccessibilityService : AccessibilityService() {
             }
             true
         }.getOrDefault(false)
-        liveRuntime.tick(safeYoutube)
-        if (safeYoutube) statusOverlay.show(AgentRunState.live.judging, liveRuntime.detail) else statusOverlay.hide()
+        safeForeground = safeYoutube
+        val remaining = pause.remaining(SystemClock.elapsedRealtime())
+        if (remaining == 0L && prefs.getBoolean("pause_active", false)) releasePause("expired")
+        liveRuntime.tick(safeYoutube && remaining == 0L)
+        if (!safeYoutube) { proposal = null; statusOverlay.hide(); intervention.hide(); return }
+        if (remaining > 0) {
+            statusOverlay.hide()
+            intervention.pause((remaining + 999) / 1000, { releasePause("release"); refreshAgentStatus() },
+                { performGlobalAction(GLOBAL_ACTION_HOME) })
+            return
+        }
+        val pending = proposal
+        if (pending != null && pending.second()) {
+            statusOverlay.hide()
+            if (!intervention.suggestion(pending.first, ::choose)) proposal = null
+        } else {
+            proposal = null; intervention.hide()
+            val history = prefs.getString("intervention_history", "").orEmpty()
+            statusOverlay.show(AgentRunState.live.judging, liveRuntime.detail +
+                if (history.isBlank()) "" else "\n\n本人の選択・休止終了履歴（端末内）\n$history")
+        }
+    }
+
+    private fun choose(choice: String) {
+        val pending = proposal ?: return
+        // Re-read foreground, consent, authentication, click sequence and freshness at click time.
+        refreshAgentStatus()
+        if (!safeForeground || proposal !== pending || !pending.second()) return
+        proposal = null; intervention.hide()
+        recordChoice(choice)
+        when (choice) {
+            "pause" -> {
+                pause.approve(SystemClock.elapsedRealtime())
+                prefs.edit().putBoolean("pause_active", true).putLong("pause_approved_at", System.currentTimeMillis())
+                    .putString("pause_binding", pauseBinding())
+                    .putLong("pause_until", System.currentTimeMillis() + VoluntaryPause.DURATION).apply()
+                liveRuntime.tick(false)
+                if (!performGlobalAction(GLOBAL_ACTION_HOME)) releasePause("home_failed")
+            }
+            "stop" -> { prefs.edit().putBoolean("automatic_consent", false).apply(); CloudRepository.cancel() }
+        }
+        refreshAgentStatus()
+    }
+
+    private fun recordChoice(choice: String) {
+        // Local fixed vocabulary only; no click text, goal, model prose or invented feedback.
+        val row = "${System.currentTimeMillis()} $choice"
+        val previous = prefs.getString("intervention_history", "").orEmpty().lines().filter { it.isNotBlank() }
+        prefs.edit().putString("intervention_history", (previous + row).takeLast(50).joinToString("\n"))
+            .putString("intervention_history_owner", FirebaseAuth.getInstance().currentUser?.uid).apply()
+    }
+
+    private fun releasePause(reason: String) {
+        pause.release()
+        if (prefs.getBoolean("pause_active", false)) {
+            prefs.edit().putBoolean("pause_active", false).remove("pause_until").remove("pause_binding").apply()
+            recordChoice(reason)
+        }
     }
     private val poll = object : Runnable {
         override fun run() {
@@ -68,6 +153,8 @@ class GuardAccessibilityService : AccessibilityService() {
         }
     }
     override fun onServiceConnected() {
+        // Reconnection/process restart never resurrects a previous restriction.
+        releasePause("service_reconnected")
         handler.removeCallbacks(poll); handler.post(poll)
         prefs.registerOnSharedPreferenceChangeListener(preferenceListener)
         handler.removeCallbacks(statusPoll); handler.post(statusPoll)
@@ -102,11 +189,12 @@ class GuardAccessibilityService : AccessibilityService() {
             repository.interaction(now, type, observed, revision)
         }
     }
-    override fun onInterrupt() { liveRuntime.tick(false); statusOverlay.hide() }
+    override fun onInterrupt() { proposal = null; releasePause("service_interrupted"); liveRuntime.tick(false); statusOverlay.hide(); intervention.hide() }
     override fun onDestroy() {
         handler.removeCallbacks(poll); handler.removeCallbacks(statusPoll)
         prefs.unregisterOnSharedPreferenceChangeListener(preferenceListener)
         liveRuntime.destroy()
+        proposal = null; releasePause("service_stopped"); intervention.hide()
         statusOverlay.hide()
         super.onDestroy()
     }

@@ -18,7 +18,8 @@ import java.util.concurrent.Executors
 /** UI-thread scheduling; Room reads use collector IO, all network waits use separate IO. */
 class LiveAgentRuntime(
     context: Context, private val handler: Handler, private val repository: TimelineRepository,
-    private val refresh: () -> Unit
+    private val refresh: () -> Unit,
+    private val suggest: (String, () -> Boolean) -> Unit = { _, _ -> }
 ) {
     private val app = context.applicationContext
     private val prefs = app.getSharedPreferences("guard", Context.MODE_PRIVATE)
@@ -140,7 +141,7 @@ class LiveAgentRuntime(
                             }
                             val result = validated.getOrThrow()
                             // No automatic restriction. Suggestion UI is connected separately in DG-304.
-                            policy.finishAndAllowSuggestion(result, snapshot.context, sequence, ready, SystemClock.elapsedRealtime())
+                            val allowSuggestion = policy.finishAndAllowSuggestion(result, snapshot.context, sequence, ready, SystemClock.elapsedRealtime())
                             val alignment = value.getJSONObject("result").getString("goal_alignment")
                             val names = mutableListOf<String>()
                             val trace = value.getJSONArray("trace")
@@ -174,7 +175,12 @@ class LiveAgentRuntime(
                                     DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault())
                                         .format(Instant.ofEpochMilli(event.timestamp)), event.eventType, event.text, event.textStatus) },
                                 model.getString("uncertainty"))
+                            val explanation = pendingExplanation.orEmpty()
                             finish(id, text, value.getString("status"), "unknown", alignment, AnalysisDiagnostics.tools(names))
+                            if (allowSuggestion) suggest(explanation) {
+                                currentKey == key && schedule.epoch == epoch && sequence == snapshot.clickSequence &&
+                                    !destroyed && SystemClock.elapsedRealtime() - snapshot.capturedElapsedMs <= LiveAnalysisPolicy.RESULT_MAX_AGE_MS
+                            }
                         }
                         }
                     }

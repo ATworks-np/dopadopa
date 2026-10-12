@@ -1,0 +1,22 @@
+{
+  "android_tests": 44.0,
+  "tickets": [
+    "DG-304",
+    "DG-305",
+    "DG-307"
+  ],
+  "emulator_used": false,
+  "docs_tests": 4,
+  "limitations": [
+    "Real overlay, HOME and release not verified",
+    "Process/service reconnect releases old pause instead of restoring remaining time",
+    "Inference budget persistence remains pending"
+  ],
+  "date": "2026-10-12",
+  "distribution": "Previous invitation release does not contain these changes",
+  "failures": 0.0,
+  "real_device_tested": false,
+  "ticket_validate": 33,
+  "assembleDebug": "PASS",
+  "apk_sha256": "ed5e9d224d7ce12ed8f08aae4cf6847fa0eb7ada8023ad688f4186c47491044c"
+}
