@@ -1,0 +1,14 @@
+{
+  "tasks": [
+    "testDebugUnitTest",
+    "assembleDebug"
+  ],
+  "tests": 41,
+  "failures": 0,
+  "errors": 0,
+  "apk_sha256": "4331f4e027f82744da2b7680164dc0837404345a04f70318f647c8a6b2012df1",
+  "device_used": false,
+  "installed": false,
+  "explanation_retention": "runtime memory, eight runs; clear on context change/destroy",
+  "real_observation_saved": false
+}

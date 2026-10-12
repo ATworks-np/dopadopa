@@ -2,7 +2,7 @@
 
 > このファイルは `python docs/scripts/tickets.py board` で自動生成。直接編集しない。
 
-合計 **31** 件 / P0 **26** 件
+合計 **32** 件 / P0 **27** 件
 
 ## backlog (8)
 
@@ -21,7 +21,7 @@
 
 _該当なし_
 
-## in-progress (13)
+## in-progress (14)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
@@ -38,6 +38,7 @@ _該当なし_
 | [DG-303](in-progress/DG-303.md) | P0 | M6 | YouTube利用中の自動同期・Agent実行 | DG-301, DG-302, DG-306 | Codex |
 | [DG-304](in-progress/DG-304.md) | P0 | M6 | ゴール乖離候補のオーバーレイ提案 | DG-301, DG-306 | Codex |
 | [DG-306](in-progress/DG-306.md) | P0 | M6 | 自動提案の個別同意とゴール設定UI | DG-300 | Codex |
+| [DG-309](in-progress/DG-309.md) | P0 | M6 | 自動分析の操作・判断・根拠の説明表示 | - | Codex |
 
 ## blocked (2)
 

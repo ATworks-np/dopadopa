@@ -381,3 +381,9 @@ MVP完成ゴールはactive。AC-01〜07全体の完成を報告していない�
 - workspace main、基点b60abdb、開発/書類は未コミット/未push。別端末への引き継ぎには未追跡ファイルも必要。
 
 - 引き継ぎ資料最終検証: docs4件PASS、31ticket validate PASS、git diff --check PASS、資料の参照リンク存在確認PASS。
+
+
+## 2026-10-12 DG-309 判断説明の表示
+- 本人要求により各回のTool操作、ゴール関係、根拠付き仮説、対応する観測、不確実性をoverlay詳細へ追加。説明はメモリ直近8回、文脈変更/サービス破棄で消去。診断ログに自由文は出さない。
+- 新formatter3件とAndroid全単体/assembleDebug成功。android-analysis-explanation-build.json参照。
+- 本人指示で今回はコード・ビルドまで。実機/エミュレータの使用、クラウド配置・新推論なし。実画面の受入は未確認、DG-309 in-progress。

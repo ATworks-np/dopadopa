@@ -11,6 +11,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.ScrollView
 import com.example.dopadopa.MainActivity
 
 /** Small touch target only; the rest of YouTube remains interactive. UI thread only. */
@@ -50,7 +51,11 @@ class AgentStatusOverlay(private val service: AccessibilityService, private val 
             val explanation = TextView(service).apply {
                 setTextColor(Color.WHITE); textSize = 12f; maxWidth = dp(240)
             }
-            extra.addView(explanation)
+            val scroll = ScrollView(service).apply {
+                addView(explanation)
+                layoutParams = LinearLayout.LayoutParams(dp(260), dp(320))
+            }
+            extra.addView(scroll)
             extra.addView(Button(service).apply {
                 text = "設定を開く"
                 setOnClickListener {

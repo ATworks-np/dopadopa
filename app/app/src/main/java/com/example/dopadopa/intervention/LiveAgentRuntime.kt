@@ -33,6 +33,8 @@ class LiveAgentRuntime(
     private var lastStatus = "まだ分析していません"
     private var analysisLog = ""
     private var logLoaded = false
+    private val explanations = ArrayDeque<String>()
+    private var pendingExplanation: String? = null
     var detail: String = "次の分析を待っています"
         private set
 
@@ -50,11 +52,18 @@ class LiveAgentRuntime(
         schedule.deferUntil(policy.nextAllowedStartElapsedMs())
         val due = schedule.tick(key, activeId != null, now)
         currentKey = key
+        if (schedule.epoch != oldEpoch) {
+            explanations.clear()
+            pendingExplanation = null
+            lastStatus = "この利用文脈ではまだ分析していません"
+        }
         if (schedule.epoch != oldEpoch && activeId != null) CloudRepository.cancel()
         detail = if (activeId != null) "直近の観測とゴールを分析しています。\n$lastStatus"
             else "次の分析まで ${schedule.remainingSeconds(now)} 秒\n$lastStatus"
         val logText = analysisLog()
         if (logText.isNotEmpty()) detail += "\n$logText"
+        if (key != null && explanations.isNotEmpty())
+            detail += "\n\n各回の分析説明（この利用文脈の直近8回）\n" + explanations.reversed().joinToString("\n\n")
         if (!due || destroyed || uid == null) return
         val id = "live-" + UUID.randomUUID()
         activeId = id
@@ -143,6 +152,28 @@ class LiveAgentRuntime(
                             }
                             prefs.edit().putString("live_last_alignment", alignment)
                                 .putInt("live_last_tool_count", trace.length()).apply()
+                            val model = value.getJSONObject("result")
+                            val toolDetails = (0 until trace.length()).map { i ->
+                                val row = trace.getJSONObject(i)
+                                AnalysisExplanation.Tool(row.getString("tool"), row.getInt("count"), row.getLong("elapsed_ms"))
+                            }
+                            val claims = mutableListOf<AnalysisExplanation.Claim>()
+                            for (section in listOf("segments", "transitions")) {
+                                val rows = model.getJSONArray(section)
+                                for (i in 0 until rows.length()) {
+                                    val row = rows.getJSONObject(i)
+                                    val ids = row.getJSONArray("evidence_ids")
+                                    claims.add(AnalysisExplanation.Claim(
+                                        if (section == "segments") row.getString("topic") + ": " + row.getString("intent_hypothesis")
+                                        else row.getString("hypothesis"),
+                                        (0 until ids.length()).map { ids.getString(it) }))
+                                }
+                            }
+                            pendingExplanation = AnalysisExplanation.render(body.getString("user_goal"), alignment, toolDetails, claims,
+                                events.map { event -> AnalysisExplanation.Observation(event.eventId,
+                                    DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault())
+                                        .format(Instant.ofEpochMilli(event.timestamp)), event.eventType, event.text, event.textStatus) },
+                                model.getString("uncertainty"))
                             finish(id, text, value.getString("status"), "unknown", alignment, AnalysisDiagnostics.tools(names))
                         }
                         }
@@ -201,6 +232,12 @@ class LiveAgentRuntime(
         policy.finishFailure(id)
         activeId = null; AgentRunState.live.finish(id)
         lastStatus = status
+        if (currentKey != null) {
+            explanations.addLast("${clockNow()} — $status\n" +
+                (pendingExplanation ?: "この回の判断説明はありません。状態: $code / 段階: $stage\n失敗・破棄から判断理由を推測しません。"))
+            while (explanations.size > 8) explanations.removeFirst()
+        }
+        pendingExplanation = null
         remember(AnalysisDiagnostics.line(clockNow(), code, stage, alignment, tools))
         prefs.edit().putString("live_last_status", code).putLong("live_last_finished_at", System.currentTimeMillis())
             .putInt("live_total_finished", prefs.getInt("live_total_finished", 0) + 1).apply()
@@ -227,6 +264,8 @@ class LiveAgentRuntime(
 
     fun destroy() {
         destroyed = true
+        explanations.clear()
+        pendingExplanation = null
         if (activeId != null) CloudRepository.cancel()
         // The request owns judging until its transport returns; no overlapping replacement run.
     }
