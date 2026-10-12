@@ -165,3 +165,7 @@ MainActivityをMaterial 3のホーム/分析/履歴/設定へ分割。ホーム�
 ## DG-313: 選択式5ターンセットアップ
 
 初回を4問+本人確認のUsageConversationへ置換。学習/娯楽/休憩→分岐した具体的使い方→時間目安→振り返り方→確認。戻る/選び直し、確認時のみ保存。LLM不要で端末内完結、同意は別。対象はYouTubeのみ、他アプリ予告を削除し内部app_id/package_name/Adapterは維持。ホームはあなたが望む使い方/使い方を変更。既存の保存済み設定は保持。Android46件/失敗0、全108選択パターンの単体検証、assembleDebug成功。新フローの実機・エミュレータUI検証と再配布は未実施。
+
+## 最新: DG-314使い方相談エージェント
+
+DG-313の固定質問を廃止。server/onboarding.pyのADK ConsultationAgentが前の回答から質問/選択肢/まとめを生成。Firebase認証付きPOST /v1/usage-consultation。初回Androidにログインと相談内容のAI送信同意を追加、既存の収集/自動分析同意はONにしない。4回答+本人確認の5ターン、25秒/LLM2回、本人別30回/時間・同時1件。質問/回答は一時メモリ、serverには保存しない（quotaの固定メタデータのみ）。時間目安を制限許可にせず、選択肢以外の回答・不正出力を拒否。失敗/戻る/キャンセル/owner変更を扱う。最終使い方だけ本人確認で保存。server76件PASS（架空providerで実ADKも試験）、Android44件/失敗0、assembleDebug成功。実LLM・クラウド配置・端末/配布未検証。Cloud Runを更新するまでAPIは404で初回相談できない。既存エミュレータAPKも未更新。

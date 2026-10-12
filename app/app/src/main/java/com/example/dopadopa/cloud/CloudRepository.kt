@@ -42,6 +42,12 @@ class CloudRepository(context: Context,
     fun liveGeneration(binding: LiveCloudBinding): Long =
         request("GET", "/v1/user/generation", null, binding.uid, binding.revision, live = binding).getLong("generation")
 
+    /** Separate explicit consultation consent; never enables operation collection or auto analysis. */
+    fun consultUsage(history: JSONArray, consent: Boolean, uid: String): JSONObject {
+        require(consent && history.length() <= 4)
+        return request("POST", "/v1/usage-consultation", JSONObject().put("consultation_consent", true).put("history", history), uid, null)
+    }
+
     fun analyzeLive(body: JSONObject, binding: LiveCloudBinding, generation: Long): JSONObject {
         require(liveAuthorized(binding))
         val id = body.getString("snapshot_id")
@@ -206,7 +212,7 @@ class CloudRepository(context: Context,
             connection.connectTimeout = 10_000
             // Cloud Run may use its full 60-second request budget, including
             // remote Engine startup. Allow its response to arrive before giving up.
-            connection.readTimeout = if (path == "/v1/analyses" || path.endsWith("/analyze")) 65_000 else 15_000
+            connection.readTimeout = if (path == "/v1/usage-consultation") 35_000 else if (path == "/v1/analyses" || path.endsWith("/analyze")) 65_000 else 15_000
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("Authorization", "Bearer $token")
             connection.setRequestProperty("Content-Type", "application/json")

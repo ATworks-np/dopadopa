@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
         key(tab, confirmed) {
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             if (!confirmed) {
-                UsageConversation(saving) { description ->
+                UsageConversation(this@MainActivity, saving) { description ->
                     saving = true; error = null
                     val value = UserGoal("g-" + UUID.randomUUID(), description, "youtube", System.currentTimeMillis(), "local")
                     PrivacyGate.io.execute {

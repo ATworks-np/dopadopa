@@ -15,6 +15,8 @@ from server.store import MemoryStore, FirestoreStore, ConflictError, ExpiredSnap
 from server.live import SnapshotStoreView, read_snapshot
 
 app = FastAPI(title="DopaGuard", version="0.1.0")
+from server.onboarding import Input as ConsultationInput
+
 log = logging.getLogger("dopaguard")
 # Closed vocabulary. Exception text, IDs, tokens, and observation text are never logged.
 DIAGNOSTIC_STAGES = {"configuration", "service_credentials", "engine_transport", "engine_http_rejection",
@@ -54,6 +56,20 @@ def get_store():
             app.state.store = MemoryStore()
         else: app.state.store = FirestoreStore(os.environ["GOOGLE_CLOUD_PROJECT"])
     return app.state.store
+
+@app.post("/v1/usage-consultation")
+def usage_consultation(body: ConsultationInput, uid=Depends(authenticated_user), store=Depends(get_store)):
+    from server.onboarding import ConsultationAgent, claim, release
+    generation = store.generation(uid)
+    request_id = str(uuid4())
+    claim(store, uid, generation, request_id)
+    try:
+        step = ConsultationAgent().run(body.history)
+        if store.generation(uid) != generation: raise ConflictError("generation changed")
+        return step.model_dump(mode="json")
+    except ConflictError: raise
+    except Exception: raise HTTPException(503, "consultation unavailable") from None
+    finally: release(store, uid, request_id)
 
 @app.exception_handler(ExpiredSnapshotError)
 async def expired_snapshot(request, exception):

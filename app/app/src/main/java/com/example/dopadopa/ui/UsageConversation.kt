@@ -3,55 +3,123 @@ package com.example.dopadopa.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.example.dopadopa.cloud.CloudRepository
+import com.google.firebase.auth.FirebaseAuth
+import org.json.JSONArray
+import org.json.JSONObject
+import android.content.Context
 
-/** Local choice conversation. Confirmation never implies data/analysis consent. */
-object UsageQuestions {
-    data class Question(val text: String, val choices: List<String>)
-    fun question(answers: List<String>): Question = when (answers.size) {
-        0 -> Question("YouTubeをどのように使いたいですか？", listOf("学びや調べものに使いたい", "趣味や好きな動画を楽しみたい", "気分転換や休憩に使いたい"))
-        1 -> when (answers[0]) {
-            "学びや調べものに使いたい" -> Question("どんな学びに使いたいですか？", listOf("仕事や勉強に役立つ知識", "趣味や暮らしの知識", "そのとき気になったことを調べる"))
-            "趣味や好きな動画を楽しみたい" -> Question("どんな楽しみ方が近いですか？", listOf("好きなテーマをじっくり楽しむ", "好きな投稿者の動画を楽しむ", "いろいろな動画に出会いたい"))
-            else -> Question("どんな休憩にしたいですか？", listOf("作業の合間にひと息つく", "一日の終わりにくつろぐ", "気持ちを切り替える"))
-        }
-        2 -> Question("1回に使う時間の目安はありますか？", listOf("15分くらい", "30分くらい", "1時間くらい", "時間は決めず、内容を大切にしたい"))
-        3 -> Question("使い方を振り返るとき、何を大切にしたいですか？", listOf("最初に選んだ目的を大切にしたい", "別の話題に移ったら気づきたい", "自由に楽しみつつ、ときどき振り返りたい"))
-        else -> error("confirmation has no further question")
+/** AI-generated questions. No static question fallback is presented as an agent response. */
+@Composable fun UsageConversation(context: Context, saving: Boolean, confirm: (String) -> Unit) {
+    val auth = remember { FirebaseAuth.getInstance() }
+    var uid by remember { mutableStateOf(auth.currentUser?.uid) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var loggingIn by remember { mutableStateOf(false) }
+    var loginError by remember { mutableStateOf<String?>(null) }
+    DisposableEffect(auth) {
+        val listener = FirebaseAuth.AuthStateListener { uid = it.currentUser?.uid }
+        auth.addAuthStateListener(listener)
+        onDispose { auth.removeAuthStateListener(listener) }
     }
-    fun description(answers: List<String>): String {
-        require(answers.size == 4)
-        answers.indices.forEach { i -> require(answers[i] in question(answers.take(i)).choices) }
-        return "YouTubeは、${answers[0]}。具体的には、${answers[1]}。" +
-            "利用時間の希望は「${answers[2]}」。使い方では「${answers[3]}」。時間は目安で、自動的な制限を希望するものではありません。"
+    if (uid == null) {
+        Text("AIと相談して、YouTubeの使い方を決めましょう", style = MaterialTheme.typography.headlineSmall)
+        Text("AIとの対話にはログインが必要です。入力した回答の送信は、次の画面で選べます。")
+        OutlinedTextField(email, { email = it }, label = { Text("メールアドレス") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(password, { password = it }, label = { Text("パスワード") }, singleLine = true,
+            visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+        fun login(create: Boolean) {
+            loggingIn = true; loginError = null
+            val task = if (create) auth.createUserWithEmailAndPassword(email.trim(), password) else auth.signInWithEmailAndPassword(email.trim(), password)
+            task.addOnCompleteListener {
+                loggingIn = false; password = ""
+                if (!it.isSuccessful) loginError = "ログインできませんでした。入力と通信状態を確認してください。"
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(enabled = !loggingIn && email.isNotBlank() && password.length >= 6, onClick = { login(false) }) { Text("ログイン") }
+            OutlinedButton(enabled = !loggingIn && email.isNotBlank() && password.length >= 6, onClick = { login(true) }) { Text("新規登録") }
+        }
+        loginError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    } else key(uid) {
+        AgentConversation(context, uid!!, saving, confirm)
     }
 }
 
-@Composable fun UsageConversation(saving: Boolean, confirm: (String) -> Unit) {
-    var answers by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
+@Composable private fun AgentConversation(context: Context, uid: String, saving: Boolean, confirm: (String) -> Unit) {
+    var consent by remember { mutableStateOf(false) }
+    var history by remember { mutableStateOf<List<JSONObject>>(emptyList()) }
+    var step by remember { mutableStateOf<JSONObject?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var requestHistory by remember { mutableStateOf<List<JSONObject>>(emptyList()) }
+    val handler = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
+    val live = remember { java.util.concurrent.atomic.AtomicBoolean(true) }
+    val requestSequence = remember { java.util.concurrent.atomic.AtomicLong() }
+    DisposableEffect(uid) { onDispose { live.set(false) } }
+    fun ask(next: List<JSONObject>) {
+        if (busy || !consent) return
+        busy = true; error = null; requestHistory = next
+        val requestId = requestSequence.incrementAndGet()
+        CloudRepository.io.execute {
+            val result = runCatching {
+                val value = CloudRepository(context).consultUsage(JSONArray().also { rows -> next.forEach { rows.put(it) } }, consent, uid)
+                val message = value.getString("message")
+                val choices = value.getJSONArray("choices")
+                require(message.isNotBlank() && message.length <= 500)
+                if (next.size == 4) require(choices.length() == 0 && !value.isNull("summary") && value.getString("summary").isNotBlank() && value.getString("summary").length <= 500)
+                else require(choices.length() in 2..5 && value.isNull("summary") &&
+                    (0 until choices.length()).map { choices.getString(it) }.let { options ->
+                        options.distinct().size == options.size && options.all { it.isNotBlank() && it.length <= 150 }
+                    })
+                value
+            }
+            handler.post {
+                if (live.get() && requestSequence.get() == requestId && FirebaseAuth.getInstance().currentUser?.uid == uid) {
+                    busy = false
+                    result.onSuccess { history = next; step = it }
+                    if (result.isFailure) error = "AIに接続できませんでした。回答は追加せず、そのまま再試行できます。"
+                }
+            }
+        }
+    }
     Column(Modifier.widthIn(max = 600.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("${answers.size + 1} / 5", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-        LinearProgressIndicator(progress = { (answers.size + 1) / 5f }, modifier = Modifier.fillMaxWidth())
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("DopaGuard", style = MaterialTheme.typography.labelLarge)
-                Text(if (answers.size < 4) UsageQuestions.question(answers).text else "この使い方で始めますか？", style = MaterialTheme.typography.headlineSmall)
-                if (answers.size == 4) Text(UsageQuestions.description(answers), style = MaterialTheme.typography.bodyLarge)
-            }
-        }
-        if (answers.size < 4) {
-            Text("近いものをひとつ選んでください。あとで変更できます。", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            UsageQuestions.question(answers).choices.forEach { choice ->
-                OutlinedButton(modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = !saving,
-                    onClick = { answers = ArrayList(answers + choice) }) { Text(choice) }
-            }
+        if (!consent) {
+            Text("AIと相談して、使い方を決める", style = MaterialTheme.typography.headlineSmall)
+            Text("あなたの選択に合わせてAIが質問を考えます。約5ターンでまとめ、最後にあなたが確認します。")
+            Text("質問と選んだ回答をGeminiへ送ります。YouTubeの操作履歴は送りません。相談履歴はサーバーに保存せず、収集や自動分析の同意とは別です。")
+            Button(onClick = { consent = true; ask(emptyList()) }) { Text("回答のAI送信に同意して相談を始める") }
         } else {
-            Text("選んだ使い方だけを保存します。データ収集や自動分析は、設定で別に選べます。")
-            Button(modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = !saving,
-                onClick = { confirm(UsageQuestions.description(answers)) }) { Text(if (saving) "保存中…" else "この使い方で始める") }
+            Text("${history.size + 1} / 5 · AIとの相談", style = MaterialTheme.typography.labelLarge)
+            step?.let { current ->
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(current.getString("message"), style = MaterialTheme.typography.titleLarge)
+                        if (history.size == 4) Text(current.getString("summary"))
+                    }
+                }
+                if (history.size < 4) {
+                    val choices = current.getJSONArray("choices")
+                    for (i in 0 until choices.length()) {
+                        val option = choices.getString(i)
+                        OutlinedButton(modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = !busy && !saving,
+                            onClick = { ask(history + JSONObject().put("question", current.getString("message")).put("choices", choices).put("answer", option)) }) { Text(option) }
+                    }
+                } else Button(enabled = !saving && !busy, onClick = { confirm(current.getString("summary")) }) { Text(if (saving) "保存中…" else "この使い方で始める") }
+            }
+            if (busy) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("AIが回答を受けて考えています…") }
+            error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
+                OutlinedButton(enabled = !busy, onClick = { ask(requestHistory) }) { Text("同じ回答で再試行") }
+            }
+            if (history.isNotEmpty()) TextButton(enabled = !busy && !saving, onClick = { ask(history.dropLast(1)) }) { Text("ひとつ前から選び直す") }
+            TextButton(enabled = !saving, onClick = {
+                requestSequence.incrementAndGet(); CloudRepository.cancel(); busy = false
+                consent = false; step = null; history = emptyList(); requestHistory = emptyList(); error = null
+            }) { Text("相談をやめる") }
         }
-        if (answers.isNotEmpty()) TextButton(enabled = !saving, onClick = { answers = ArrayList(answers.dropLast(1)) }) { Text("ひとつ前に戻る") }
     }
 }
