@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import com.example.dopadopa.cloud.CloudRepository
 import com.example.dopadopa.data.GuardDatabase
 import org.json.JSONObject
@@ -49,8 +50,8 @@ import org.json.JSONObject
         }
     }) { Text("同期済みセッションを更新") }
     Text(message)
-    sessions.forEach { session ->
-        OutlinedButton(enabled = !busy, onClick = {
+    sessions.forEachIndexed { index, session ->
+        OutlinedButton(modifier = Modifier.fillMaxWidth(), enabled = !busy, onClick = {
             execute {
                 val sid = session.getString("session_id")
                 val result = runCatching {
@@ -63,11 +64,11 @@ import org.json.JSONObject
                     if (result.isFailure) message = "セッションの観測根拠を取得できませんでした。"
                 } }
             }
-        }) { Text("${session.getString("session_id")} · ${session.getString("data_origin")} · ${session.getInt("event_count")}件") }
+        }) { Text("記録 ${index + 1} · ${if (session.getString("data_origin") == "real") "実際の操作" else "サンプル"} · ${session.getInt("event_count")}件の操作") }
     }
     selected?.let { timeline ->
-        Text("選択中: ${timeline.getString("session_id")}")
-        Text("data_origin: ${timeline.getJSONArray("events").getJSONObject(0).getString("data_origin")}")
+        Text("選択した記録", style = MaterialTheme.typography.titleMedium)
+        Text(if (timeline.getJSONArray("events").getJSONObject(0).getString("data_origin") == "real") "端末から取得した実際の操作" else "動作説明用のサンプル")
         Button(enabled = cloudConsent && !busy, onClick = {
             record = null; message = "分析中です。別のアプリの利用を続けられます。"
             execute {

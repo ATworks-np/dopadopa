@@ -8,10 +8,15 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.dopadopa.data.*
 import java.util.UUID
 import com.example.dopadopa.cloud.CloudRepository
@@ -22,7 +27,15 @@ import com.example.dopadopa.ui.CloudAnalysisScreen
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { Surface { GuardScreen() } } }
+        setContent {
+            val colors = if (isSystemInDarkTheme()) darkColorScheme(primary = Color(0xFFA9B5FF),
+                background = Color(0xFF11131C), surface = Color(0xFF1A1D29)) else lightColorScheme(
+                primary = Color(0xFF5364DB), onPrimary = Color.White, primaryContainer = Color(0xFFE5E9FF),
+                background = Color(0xFFF6F7FC), surface = Color.White, onSurface = Color(0xFF202437))
+            MaterialTheme(colorScheme = colors, shapes = Shapes(medium = RoundedCornerShape(20.dp), large = RoundedCornerShape(28.dp))) {
+                GuardScreen()
+            }
+        }
     }
 
     @Composable private fun GuardScreen() {
@@ -48,6 +61,7 @@ class MainActivity : ComponentActivity() {
         var cloudBusy by remember { mutableStateOf(false) }
         var cloudStatus by remember { mutableStateOf("まだ同期していません。") }
         var cloudDataEpoch by remember { mutableIntStateOf(0) }
+        var tab by rememberSaveable { mutableIntStateOf(0) }
         DisposableEffect(prefs) {
             val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                 if (key == "automatic_consent") automatic = prefs.getBoolean("automatic_consent", false)
@@ -96,9 +110,24 @@ class MainActivity : ComponentActivity() {
                 }
             } else saveConsent()
         }
-        Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("DopaGuard", style = MaterialTheme.typography.headlineLarge)
-            Text("YouTubeの使い方を、あなたのゴールに沿って支える", style = MaterialTheme.typography.titleMedium)
+        Scaffold(modifier = Modifier.safeDrawingPadding(), containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp)) {
+                    Text("DopaGuard", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(if (!confirmed) "あなたの目的から、はじめよう" else listOf("ホーム", "AIの分析", "行動の履歴", "設定")[tab],
+                        style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }, bottomBar = {
+                if (confirmed) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                    listOf("ホーム", "分析", "履歴", "設定").forEachIndexed { index, name ->
+                        NavigationBarItem(selected = tab == index, onClick = { tab = index },
+                            icon = { Text(listOf("⌂", "◎", "≡", "⚙")[index], style = MaterialTheme.typography.titleLarge) },
+                            label = { Text(name) })
+                    }
+                }
+            }) { padding ->
+        key(tab, confirmed) {
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             if (!confirmed) {
                 Text("1 · 困っていること", style = MaterialTheme.typography.titleLarge)
                 CheckRow("気づいたら長時間使っている", longUse) { longUse = it }
@@ -134,7 +163,17 @@ class MainActivity : ComponentActivity() {
                     }
                 }) { Text(if (saving) "保存中…" else "このゴールを確認して次へ") }
             } else {
-                Text("確認済みのゴール", style = MaterialTheme.typography.titleLarge)
+                if (tab == 0) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(if (automatic) "● 自動分析 ON" else "○ 自動分析 OFF", style = MaterialTheme.typography.titleLarge)
+                        Text(if (automatic) "YouTubeでの行動を1分ごとに振り返ります。" else "ゴールと同意を確認して、自分のペースで始めましょう。")
+                        if (!collection || !cloud || account == null) TextButton(onClick = { tab = 3 }) { Text("設定を確認する →") }
+                    }
+                }
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("あなたのゴール", style = MaterialTheme.typography.titleLarge)
                 Text(goal)
                 OutlinedButton(enabled = !saving, onClick = { goalDraft = goal; editingGoal = true }) { Text("ゴールを変更") }
                 if (editingGoal) {
@@ -164,7 +203,10 @@ class MainActivity : ComponentActivity() {
                     OutlinedButton(onClick = { editingGoal = false }) { Text("キャンセル") }
                 }
                 Text("ゴールは本人が確認して変更します。AIが勝手に変更することはありません。")
-                HorizontalDivider()
+                }
+                }
+                }
+                if (tab == 3) {
                 Text("データと同意", style = MaterialTheme.typography.titleLarge)
                 Text("操作時刻と取得可能なクリック文言を端末内に保存します。入力欄・認証・機密UIは除外し、取得不能はmissingと記録します。")
                 CheckRow("端末内での収集に同意する", collection) { checked ->
@@ -185,6 +227,8 @@ class MainActivity : ComponentActivity() {
                     CloudRepository.cancel()
                     saveConsent()
                 }
+                }
+                if (tab == 0) {
                 Text("利用中の自動分析・提案", style = MaterialTheme.typography.titleLarge)
                 Text("有効にすると、YouTube利用中の取得可能なクリック文言とゴールを自動送信して分析します。ゴールから離れた可能性がある場合に提案し、あなたが選んだ場合だけ10分休止します。休止はすぐ解除できます。")
                 CheckRow("自動送信・分析と提案に同意する", automatic,
@@ -201,7 +245,9 @@ class MainActivity : ComponentActivity() {
                     automatic = checked
                     saveConsent()
                 }
-                Text(if (automatic) "YouTube利用中に1分ごとに自動分析します。アイコンで待機中・判定中を確認できます。休止提案の操作は現在開発中です。" else "自動分析はOFFです。端末内収集・クラウド送信への同意とログインが必要です。")
+                Text(if (automatic) "YouTube上のアイコンから状態を確認できます。提案の「理由を見る」でAIの説明を読み、休止はあなたが選んだ場合だけ始まります。" else "設定タブで端末内収集・クラウド送信への同意とログインを確認してください。")
+                }
+                if (tab == 3) {
                 Text("クラウドアカウント", style = MaterialTheme.typography.titleLarge)
                 Text("DopaGuardのログインです。Google Cloud管理アカウントとは別です。")
                 if (account == null) {
@@ -253,13 +299,25 @@ class MainActivity : ComponentActivity() {
                     }) { Text("ログアウト") }
                 }
                 Text(cloudStatus)
-                auth.currentUser?.uid?.let { uid -> key(uid, cloudDataEpoch) { CloudAnalysisScreen(this@MainActivity, uid, cloud) } }
+                }
+                if (tab == 1) {
+                    Text("行動の流れと、目的が変わった可能性を振り返る", style = MaterialTheme.typography.titleLarge)
+                    Text("分析はAIの仮説です。観測した操作と、その根拠を確認できます。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    auth.currentUser?.uid?.let { uid -> key(uid, cloudDataEpoch) { CloudAnalysisScreen(this@MainActivity, uid, cloud) } }
+                        ?: Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(20.dp)) {
+                            Text("分析を見るにはログインが必要です。")
+                            TextButton(onClick = { tab = 3 }) { Text("設定でログイン") }
+                        } }
+                }
+                if (tab == 3) {
                 Text("撤回後は新しい送信を停止します。すでに送信したデータを消す場合はクラウド削除を実行してください。端末内データの削除とは別です。")
                 Text("同意しなくても設定画面を利用できます。OS権限だけでは収集は始まりません。")
                 OutlinedButton(onClick = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }) { Text("UI操作取得の権限設定") }
                 OutlinedButton(onClick = { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }) { Text("利用状況アクセスの権限設定") }
-                Text("実機収集の検証", style = MaterialTheme.typography.titleLarge)
-                Text("端末内タイムライン\n開始・終了は取得可能な利用状況イベントから記録します。終了を観測できないセッションは未確定です。同期済みの観測は上の画面から分析できます。")
+                }
+                if (tab == 2) {
+                Text("端末に記録した行動", style = MaterialTheme.typography.titleLarge)
+                Text("YouTubeでの操作を時系列で確認できます。同期した記録は分析タブで振り返れます。", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Button(onClick = {
                     PrivacyGate.io.execute {
                         val value = runCatching {
@@ -267,26 +325,43 @@ class MainActivity : ComponentActivity() {
                             val sessions = dao.sessions().take(10)
                             val permission = TimelineRepository(this@MainActivity).hasUsagePermission()
                             "利用状況権限: ${if (permission) "許可" else "未許可"}\n直近${sessions.size}セッション\n" + sessions.joinToString("\n\n") { session ->
-                                "${session.sessionId} · ${session.dataOrigin} · 終了${if (session.endedAt == null) "未確定" else "確認済み"}\n" + dao.timeline(session.sessionId, 200).joinToString("\n") {
-                                    "${it.eventId} · ${it.eventType} · ${it.textStatus} / ${it.observability}"
+                                val time = java.time.format.DateTimeFormatter.ofPattern("M月d日 HH:mm")
+                                    .withZone(java.time.ZoneId.systemDefault())
+                                "${time.format(java.time.Instant.ofEpochMilli(session.startedAt))} · ${if (session.dataOrigin == "real") "実際の操作" else "サンプル"}\n${if (session.endedAt == null) "終了は未確認" else "終了を確認済み"}\n" + dao.timeline(session.sessionId, 200).joinToString("\n") {
+                                    val name = mapOf("CLICK" to "クリック", "SCROLL" to "スクロール", "WINDOW_CHANGE" to "画面の切り替え",
+                                        "APP_FOREGROUND" to "利用開始", "APP_BACKGROUND" to "離脱")[it.eventType] ?: "操作"
+                                    "${time.format(java.time.Instant.ofEpochMilli(it.timestamp))}  $name · " + when (it.textStatus) {
+                                        "available" -> "文言を記録"; "redacted" -> "機密情報を除外"; else -> "文言は取得できません"
+                                    }
                                 }
                             }
                         }.getOrDefault("取得状態を読めませんでした。")
                         runOnUiThread { summary = value }
                     }
                 }) { Text("取得状態を更新") }
-                Text(summary)
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Text(summary, Modifier.padding(20.dp), style = MaterialTheme.typography.bodyMedium)
+                }
+                }
+                if (tab == 3) {
+                HorizontalDivider()
+                Text("データの管理", style = MaterialTheme.typography.titleLarge)
                 OutlinedButton(onClick = { revoke(false) }) { Text("収集とクラウド同意を撤回") }
                 OutlinedButton(enabled = !saving, onClick = { revoke(true) }) { Text("端末内データをすべて削除") }
+                }
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        }
+        }
         }
     }
 
     @Composable private fun CheckRow(label: String, checked: Boolean, enabled: Boolean = true, change: (Boolean) -> Unit) {
-        Row(Modifier.fillMaxWidth()) {
-            Checkbox(checked, change, enabled = enabled)
-            Text(label, Modifier.padding(top = 12.dp))
+        Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                Switch(checked, change, enabled = enabled)
+            }
         }
     }
 }

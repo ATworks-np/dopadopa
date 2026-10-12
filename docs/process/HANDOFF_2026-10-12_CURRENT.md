@@ -157,3 +157,7 @@ wrapperに実行bitがないため `bash ./gradlew` を使う。Pythonは3.13、
 ### DG-311追加: 理由を見る
 
 オーバーレイは短いsuggestion_commentを表示し、理由を見る/理由を閉じるでLLM生成のsuggestion_reason（1200文字上限）を展開する。ログ・Tool一覧のAnalysisExplanationはこの画面に渡さない。目標・前後の目的仮説・時刻/具体的クリック・不確実性を3〜5文で説明するプロンプト。支持できない転換点は作らない。コメント/理由の欠損は通知抑止。server68件/Android44件PASS・assembleDebug成功。公開クラウド/招待APKには未反映、実機未確認。
+
+## DG-312: AndroidタブUI
+
+MainActivityをMaterial 3のホーム/分析/履歴/設定へ分割。ホームはゴールと自動分析状態、設定は同意・アカウント・権限・削除、分析はCloudAnalysisScreen、履歴は端末操作。固定下部ナビ、ライト/ダーク配色、カード、余白、スイッチ、タブ別スクロール。分析の長いIDを除去し自然言語理由をカード表示、Tool診断は任意展開。履歴は時刻と日本語の操作名に変更。Android44件/失敗0・assembleDebug成功。実機・エミュレータ・視覚検証・再配布は未実施。実機の小画面/文字拡大/色/タブ導線の受入が残る。
