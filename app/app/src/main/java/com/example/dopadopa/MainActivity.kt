@@ -23,6 +23,7 @@ import com.example.dopadopa.cloud.CloudRepository
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.example.dopadopa.ui.CloudAnalysisScreen
+import com.example.dopadopa.ui.UsageConversation
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,9 +48,6 @@ class MainActivity : ComponentActivity() {
         var goalDraft by remember { mutableStateOf("") }
         var cloud by remember { mutableStateOf(prefs.getBoolean("cloud_consent", false)) }
         var goal by remember { mutableStateOf(prefs.getString("goal", "目的を確認してYouTubeを使い、意図しない長時間利用を減らしたい").orEmpty()) }
-        var longUse by remember { mutableStateOf(false) }
-        var repeated by remember { mutableStateOf(false) }
-        var tendency by remember { mutableStateOf("両方") }
         var summary by remember { mutableStateOf("まだ取得状態を確認していません。") }
         var saving by remember { mutableStateOf(false) }
         var error by remember { mutableStateOf<String?>(null) }
@@ -129,39 +127,20 @@ class MainActivity : ComponentActivity() {
         key(tab, confirmed) {
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             if (!confirmed) {
-                Text("1 · 困っていること", style = MaterialTheme.typography.titleLarge)
-                CheckRow("気づいたら長時間使っている", longUse) { longUse = it }
-                CheckRow("同じアプリを何度も開く", repeated) { repeated = it }
-                Text("2 · 対象アプリ")
-                CheckRow("YouTube", true) { }
-                Text("Instagram / X / TikTok — 今後対応予定", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("3 · 起きやすいこと")
-                listOf("無意識に開く", "開くと止まらない", "両方").forEach { value ->
-                    Row { RadioButton(tendency == value, { tendency = value }); Text(value, Modifier.padding(top = 12.dp)) }
-                }
-                Button(onClick = {
-                    goal = when {
-                        longUse && repeated -> "YouTubeを開く目的を確認し、意図しない起動と長時間利用を減らしたい"
-                        repeated || tendency == "無意識に開く" -> "YouTubeを開く前に目的を確認したい"
-                        else -> "YouTubeを使う目的を振り返り、意図しない長時間利用を減らしたい"
-                    }
-                }) { Text("選択から仮ゴールを作る") }
-                Text("4 · ゴールを確認・修正")
-                OutlinedTextField(goal, { if (it.length <= 500) goal = it }, label = { Text("本人のゴール") }, modifier = Modifier.fillMaxWidth())
-                Text("これは仮の提案です。確認したゴールをAIが勝手に変更することはありません。")
-                Button(enabled = goal.isNotBlank() && !saving && (longUse || repeated), onClick = {
+                UsageConversation(saving) { description ->
                     saving = true; error = null
-                    val value = UserGoal("g-" + UUID.randomUUID(), goal.trim(), "youtube", System.currentTimeMillis(), "local")
+                    val value = UserGoal("g-" + UUID.randomUUID(), description, "youtube", System.currentTimeMillis(), "local")
                     PrivacyGate.io.execute {
                         val result = runCatching { GuardDatabase.get(this@MainActivity).dao().saveGoal(value) }
                         runOnUiThread {
                             saving = false
                             if (result.isSuccess) {
                                 prefs.edit().putString("goal", value.description).putString("goal_revision", value.goalId).putBoolean("goal_confirmed", true).commit(); confirmed = true
-                            } else error = "ゴールの保存に失敗しました。再実行してください。"
+                                goal = value.description; tab = 0
+                            } else error = "使い方の保存に失敗しました。再実行してください。"
                         }
                     }
-                }) { Text(if (saving) "保存中…" else "このゴールを確認して次へ") }
+                }
             } else {
                 if (tab == 0) {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
@@ -173,11 +152,11 @@ class MainActivity : ComponentActivity() {
                 }
                 Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("あなたのゴール", style = MaterialTheme.typography.titleLarge)
+                Text("あなたが望む使い方", style = MaterialTheme.typography.titleLarge)
                 Text(goal)
-                OutlinedButton(enabled = !saving, onClick = { goalDraft = goal; editingGoal = true }) { Text("ゴールを変更") }
+                OutlinedButton(enabled = !saving, onClick = { goalDraft = goal; editingGoal = true }) { Text("使い方を変更") }
                 if (editingGoal) {
-                    OutlinedTextField(goalDraft, { if (it.length <= 500) goalDraft = it }, label = { Text("本人のゴール") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(goalDraft, { if (it.length <= 500) goalDraft = it }, label = { Text("YouTubeをどのように使いたいですか？") }, modifier = Modifier.fillMaxWidth())
                     Button(enabled = goalDraft.isNotBlank() && !saving, onClick = {
                         saving = true
                         val value = UserGoal("g-" + UUID.randomUUID(), goalDraft.trim(), "youtube", System.currentTimeMillis(), "local")
@@ -202,7 +181,7 @@ class MainActivity : ComponentActivity() {
                     }) { Text("変更を確認して保存") }
                     OutlinedButton(onClick = { editingGoal = false }) { Text("キャンセル") }
                 }
-                Text("ゴールは本人が確認して変更します。AIが勝手に変更することはありません。")
+                Text("使い方はあなたが選びます。AIが勝手に変更することはありません。")
                 }
                 }
                 }
