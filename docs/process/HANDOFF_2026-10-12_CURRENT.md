@@ -153,3 +153,7 @@ wrapperに実行bitがないため `bash ./gradlew` を使う。Pythonは3.13、
 ## DG-311: 動的な休止提案コメント
 
 固定の提案本文をLLM生成のsuggestion_commentへ変更。共通プロンプトは本人ゴール・具体的クリック根拠・意図的休憩の可能性・選択を委ねる日本語2〜3文を要求。suggestion_evidence_idsを別に検証し実在する取得可能クリックを必須とする。最大300文字/根拠10件。unknown/alignedはnull。旧結果は読み取り可能だがコメントなしではAndroidは提案しない。サーバー66件/Android44件PASS・assembleDebug成功。コードとビルドまで。公開Cloud RunとAgent Engineは旧コードのままなので、次は両方の配置更新が必要。実Geminiの動的文言と実機表示は未検証。以前の招待APKも未更新。
+
+### DG-311追加: 理由を見る
+
+オーバーレイは短いsuggestion_commentを表示し、理由を見る/理由を閉じるでLLM生成のsuggestion_reason（1200文字上限）を展開する。ログ・Tool一覧のAnalysisExplanationはこの画面に渡さない。目標・前後の目的仮説・時刻/具体的クリック・不確実性を3〜5文で説明するプロンプト。支持できない転換点は作らない。コメント/理由の欠損は通知抑止。server68件/Android44件PASS・assembleDebug成功。公開クラウド/招待APKには未反映、実機未確認。

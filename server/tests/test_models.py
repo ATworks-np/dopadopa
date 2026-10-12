@@ -31,6 +31,19 @@ class ContractTest(unittest.TestCase):
         value = analysis().validate_evidence([event()])
         self.assertIsNone(value.suggestion_comment)
         self.assertEqual([], value.suggestion_evidence_ids)
+        self.assertIsNone(value.suggestion_reason)
+
+    def test_natural_language_reason_requires_comment_and_bounded_length(self):
+        with self.assertRaises(ValueError): analysis(suggestion_reason="クリックから判断しました。").validate_evidence([event()])
+        with self.assertRaises(ValidationError): analysis(suggestion_reason="x" * 1201)
+
+    def test_natural_language_reason_round_trip(self):
+        reason = "目標は学習です。Kotlinの項目をクリックしたことを観測しました。目的が変わった瞬間は、この情報だけでは確認できません。"
+        value = analysis(goal_alignment="possibly_diverged", suggestion_comment="少し休みますか？",
+            suggestion_reason=reason, suggestion_evidence_ids=["e1"],
+            segments=[dict(from_event_id="e1", to_event_id="e1", topic="候補", intent_hypothesis="仮説", evidence_ids=["e1"])])
+        value.validate_evidence([event()])
+        self.assertEqual(reason, Analysis.model_validate_json(value.model_dump_json()).suggestion_reason)
     def test_redacted_cannot_retain_text(self):
         with self.assertRaises(ValidationError): event(text_status="redacted")
     def test_timezone_required(self):

@@ -175,10 +175,10 @@ class LiveAgentRuntime(
                                     DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault())
                                         .format(Instant.ofEpochMilli(event.timestamp)), event.eventType, event.text, event.textStatus) },
                                 model.getString("uncertainty"))
-                            val explanation = pendingExplanation.orEmpty()
+                            val explanation = model.optString("suggestion_reason", "").takeUnless { model.isNull("suggestion_reason") }.orEmpty()
                             finish(id, text, value.getString("status"), "unknown", alignment, AnalysisDiagnostics.tools(names))
                             val comment = model.optString("suggestion_comment", "").takeUnless { model.isNull("suggestion_comment") }.orEmpty()
-                            if (allowSuggestion && comment.isNotBlank()) suggest(comment, explanation) {
+                            if (allowSuggestion && comment.isNotBlank() && explanation.isNotBlank()) suggest(comment, explanation) {
                                 currentKey == key && schedule.epoch == epoch && sequence == snapshot.clickSequence &&
                                     !destroyed && SystemClock.elapsedRealtime() - snapshot.capturedElapsedMs <= LiveAnalysisPolicy.RESULT_MAX_AGE_MS
                             }
@@ -227,6 +227,10 @@ class LiveAgentRuntime(
         }
         require(snapshot.eventIds.containsAll(evidence))
         require(result.getString("goal_alignment") in setOf("unknown", "aligned", "possibly_diverged"))
+        if (result.has("suggestion_reason") && !result.isNull("suggestion_reason")) {
+            require(result.getString("suggestion_reason").isNotBlank() && result.getString("suggestion_reason").length <= 1200 &&
+                result.has("suggestion_comment") && !result.isNull("suggestion_comment"))
+        }
         if (result.has("suggestion_comment") && !result.isNull("suggestion_comment")) {
             val comment = result.getString("suggestion_comment")
             require(comment.isNotBlank() && comment.length <= 300 && result.getString("goal_alignment") == "possibly_diverged")

@@ -34,9 +34,13 @@ class InterventionOverlay(private val service: AccessibilityService) {
         val heading = TextView(service).apply { this.text = text; textSize = 18f; setTextColor(Color.WHITE) }
         panel.addView(heading)
         if (evidence != null) {
-            val details = TextView(service).apply { this.text = evidence; setTextColor(Color.WHITE); visibility = android.view.View.GONE }
-            panel.addView(Button(service).apply { this.text = "根拠を見る"; setOnClickListener {
+            val details = TextView(service).apply {
+                this.text = evidence.filter { !it.isISOControl() || it == '\n' }.take(1200)
+                textSize = 16f; setPadding(0, 16, 0, 16); setTextColor(Color.WHITE); visibility = android.view.View.GONE
+            }
+            panel.addView(Button(service).apply { this.text = "理由を見る"; setOnClickListener {
                 details.visibility = if (details.visibility == android.view.View.GONE) android.view.View.VISIBLE else android.view.View.GONE
+                this.text = if (details.visibility == android.view.View.VISIBLE) "理由を閉じる" else "理由を見る"
             } })
             panel.addView(details)
         }
