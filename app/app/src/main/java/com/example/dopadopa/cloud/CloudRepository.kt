@@ -135,12 +135,11 @@ class CloudRepository(context: Context,
         return "送信済み $sent · 再試行待ち $pending · 同意/件数/未確定のため対象外 $skipped · 同期後の追加観測（端末のみ）$late"
     }
 
-    fun deleteCloud(): String {
+    fun deleteCloud(expectedUid: String? = null): String {
         val uid = auth.currentUser?.uid ?: error("authentication required")
+        require(expectedUid == null || expectedUid == uid)
         request("DELETE", "/v1/user/data", null, uid, null)
-        queue.edit().clear().commit()
-        dao.deleteEnvelopes()
-        dao.deleteFeedback(); dao.deleteAnalyses()
+        // Local deletion is owned by the reset workflow after verifying the same account.
         return "このログインアカウントのクラウドデータを削除しました。"
     }
 

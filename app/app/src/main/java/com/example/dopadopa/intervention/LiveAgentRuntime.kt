@@ -257,9 +257,11 @@ class LiveAgentRuntime(
             while (explanations.size > 8) explanations.removeFirst()
         }
         pendingExplanation = null
-        remember(AnalysisDiagnostics.line(clockNow(), code, stage, alignment, tools))
-        prefs.edit().putString("live_last_status", code).putLong("live_last_finished_at", System.currentTimeMillis())
-            .putInt("live_total_finished", prefs.getInt("live_total_finished", 0) + 1).apply()
+        if (currentKey != null) {
+            remember(AnalysisDiagnostics.line(clockNow(), code, stage, alignment, tools))
+            prefs.edit().putString("live_last_status", code).putLong("live_last_finished_at", System.currentTimeMillis())
+                .putInt("live_total_finished", prefs.getInt("live_total_finished", 0) + 1).apply()
+        }
         if (!destroyed) refresh()
     }
 

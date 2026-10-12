@@ -2,7 +2,7 @@
 
 > このファイルは `python docs/scripts/tickets.py board` で自動生成。直接編集しない。
 
-合計 **37** 件 / P0 **32** 件
+合計 **38** 件 / P0 **33** 件
 
 ## backlog (6)
 
@@ -19,7 +19,7 @@
 
 _該当なし_
 
-## in-progress (20)
+## in-progress (21)
 
 | ID | 優先 | マイルストーン | タイトル | 依存 | 担当 |
 |---|---|---|---|---|---|
@@ -43,6 +43,7 @@ _該当なし_
 | [DG-312](in-progress/DG-312.md) | P0 | M6 | Androidのタブ分割とUIデザイン整理 | - | Codex |
 | [DG-313](in-progress/DG-313.md) | P0 | M6 | YouTubeの使い方を5ターンで決める対話セットアップ | - | Codex |
 | [DG-314](in-progress/DG-314.md) | P0 | M6 | 回答に応じて質問を生成する使い方相談エージェント | - | Codex |
+| [DG-315](in-progress/DG-315.md) | P0 | M6 | アカウント欄からデータ削除と初期化 | - | Codex |
 
 ## blocked (2)
 

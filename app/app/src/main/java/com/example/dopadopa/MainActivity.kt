@@ -60,6 +60,8 @@ class MainActivity : ComponentActivity() {
         var cloudStatus by remember { mutableStateOf("まだ同期していません。") }
         var cloudDataEpoch by remember { mutableIntStateOf(0) }
         var tab by rememberSaveable { mutableIntStateOf(0) }
+        var confirmReset by remember { mutableStateOf(false) }
+        var resetting by remember { mutableStateOf(false) }
         DisposableEffect(prefs) {
             val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                 if (key == "automatic_consent") automatic = prefs.getBoolean("automatic_consent", false)
@@ -255,21 +257,8 @@ class MainActivity : ComponentActivity() {
                             runOnUiThread { cloudBusy = false; cloudStatus = result.getOrDefault("同期できませんでした。通信状態を確認して再実行してください。") }
                         }
                     }) { Text(if (cloudBusy) "処理中…" else "終了したセッションを同期") }
-                    OutlinedButton(enabled = !cloudBusy, onClick = {
-                        cloudBusy = true
-                        // Stop new uploads before deletion; already received data is removed by the API.
-                        cloud = false; automatic = false
-                        synchronized(PrivacyGate.lock) { prefs.edit().putBoolean("cloud_consent", false).putBoolean("automatic_consent", false).commit(); CloudRepository.cancel() }
-                        saveConsent()
-                        CloudRepository.io.execute {
-                            val result = runCatching { CloudRepository(this@MainActivity).deleteCloud() }
-                            runOnUiThread {
-                                cloudBusy = false
-                                if (result.isSuccess) cloudDataEpoch++
-                                cloudStatus = result.getOrDefault("クラウド削除に失敗しました。ログインを維持して再実行してください。")
-                            }
-                        }
-                    }) { Text("クラウドデータをすべて削除") }
+                    OutlinedButton(enabled = !cloudBusy && !saving, onClick = { confirmReset = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("データを削除して初期化") }
                     OutlinedButton(enabled = !cloudBusy, onClick = {
                         cloud = false; automatic = false
                         revision = "consent-" + UUID.randomUUID()
@@ -289,7 +278,7 @@ class MainActivity : ComponentActivity() {
                         } }
                 }
                 if (tab == 3) {
-                Text("撤回後は新しい送信を停止します。すでに送信したデータを消す場合はクラウド削除を実行してください。端末内データの削除とは別です。")
+                Text("送信済みの記録と端末内の使い方・履歴をまとめて消すには、アカウント欄の「データを削除して初期化」を使ってください。")
                 Text("同意しなくても設定画面を利用できます。OS権限だけでは収集は始まりません。")
                 OutlinedButton(onClick = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }) { Text("UI操作取得の権限設定") }
                 OutlinedButton(onClick = { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }) { Text("利用状況アクセスの権限設定") }
@@ -326,13 +315,57 @@ class MainActivity : ComponentActivity() {
                 HorizontalDivider()
                 Text("データの管理", style = MaterialTheme.typography.titleLarge)
                 OutlinedButton(onClick = { revoke(false) }) { Text("収集とクラウド同意を撤回") }
-                OutlinedButton(enabled = !saving, onClick = { revoke(true) }) { Text("端末内データをすべて削除") }
                 }
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
         }
         }
+        if (confirmReset) AlertDialog(onDismissRequest = { confirmReset = false },
+            title = { Text("データを削除して初期化しますか？") },
+            text = { Text("このアカウントのクラウド記録と、この端末の使い方・操作履歴・分析・同意設定を削除し、最初の設定に戻ります。元に戻せません。ログインアカウントは残ります。") },
+            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("キャンセル") } },
+            confirmButton = { TextButton(onClick = {
+                confirmReset = false
+                val resetUid = auth.currentUser?.uid
+                if (resetUid == null) { error = "削除するアカウントにログインしてください。" }
+                else {
+                    resetting = true; cloudBusy = true; saving = true; error = null
+                    collection = false; cloud = false; automatic = false
+                    synchronized(PrivacyGate.lock) {
+                        prefs.edit().putBoolean("collection_consent", false).putBoolean("cloud_consent", false)
+                            .putBoolean("automatic_consent", false).commit()
+                        CloudRepository.cancel()
+                    }
+                    CloudRepository.io.execute {
+                        val result = runCatching { CloudRepository(this@MainActivity).deleteCloud(resetUid) }
+                        if (result.isFailure) runOnUiThread {
+                            resetting = false; cloudBusy = false; saving = false
+                            error = "送信と収集は停止しました。クラウド削除に失敗したため初期化していません。ログインを維持して再実行してください。"
+                        } else PrivacyGate.io.execute {
+                            val local = runCatching {
+                                synchronized(PrivacyGate.lock) {
+                                    require(auth.currentUser?.uid == resetUid)
+                                    GuardDatabase.get(this@MainActivity).dao().deleteAll()
+                                    require(getSharedPreferences("cloud_queue", MODE_PRIVATE).edit().clear().commit())
+                                    deleteFile("spike-events.jsonl")
+                                    require(prefs.edit().clear().commit())
+                                }
+                            }
+                            runOnUiThread {
+                                resetting = false; cloudBusy = false; saving = false
+                                if (local.isSuccess) {
+                                    confirmed = false; editingGoal = false; goalDraft = ""; goal = ""; tab = 0
+                                    summary = "まだ取得状態を確認していません。"; cloudStatus = "データを削除しました。"; cloudDataEpoch++
+                                    revision = "consent-v1"
+                                } else error = "クラウドデータは削除しました。端末の初期化が完了していないため、再実行してください。"
+                            }
+                        }
+                    }
+                }
+            }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("削除して初期化") } })
+        if (resetting) AlertDialog(onDismissRequest = {}, title = { Text("データを削除しています") },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("完了すると初回設定に戻ります。") } }, confirmButton = {})
     }
 
     @Composable private fun CheckRow(label: String, checked: Boolean, enabled: Boolean = true, change: (Boolean) -> Unit) {
