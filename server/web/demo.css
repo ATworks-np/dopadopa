@@ -1,0 +1,31 @@
+@import url('/assets/demo-base.css');
+.agent-consent{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.8;margin:20px 0 14px}
+.agent-consent input{flex:none;margin-top:5px;accent-color:#5364db}
+.guard #runAgent{width:100%;padding:13px 8px;font-size:13px}
+#agentStatus{font-size:12px;line-height:1.8;overflow-wrap:anywhere}
+#agentResult{overflow-wrap:anywhere}
+#agentResult h3{font-size:16px}#agentResult strong{font-size:12px}
+#agentResult details{font-size:11px}
+.event-preview{font-size:11px;line-height:1.8;margin:16px 0;overflow-wrap:anywhere}.event-preview summary{cursor:pointer}.event-preview p{font-size:10px}
+@media(max-width:720px){.watch-layout .guard{display:block}.guard .orb{display:none}.guard h2 br{display:none}.guard h2{font-size:20px}.guard-stat{margin-top:12px}}
+
+/* Match Android MainActivity's light palette and GoalSelection's layout. */
+.goal-screen{background:#f6f7fc;color:#202437}
+.goal-screen>header{background:#f6f7fc;border:0;justify-content:flex-end}
+.goal-screen>header .brand{display:none}
+.goal-screen>main{padding:0 24px 64px}
+.goal-screen .onboarding{max-width:480px;margin:0 auto;text-align:left}
+.app-heading{padding:20px 0;margin-bottom:8px}
+.app-heading>div{color:#5364db;font-size:28px;line-height:36px;font-weight:400;letter-spacing:0}
+.app-heading p{font-size:16px;line-height:24px;color:#45464f;margin:0;letter-spacing:.15px}
+.goal-screen .onboarding h1{font-size:22px;font-weight:400;line-height:28px;letter-spacing:0;margin:0 0 16px}
+.goal-help{font-size:16px;line-height:24px;letter-spacing:.2px;margin:0 0 16px}
+.goal-screen .goals{display:flex;flex-direction:column;gap:16px;margin:0 0 16px}
+.goal-screen .goal{display:flex;align-items:center;gap:8px;padding:8px 0;min-height:64px;border:0;border-radius:0;background:transparent;cursor:pointer;font-size:16px;line-height:24px;font-weight:400}
+.goal-screen .goal input{appearance:none;flex:none;width:18px;height:18px;border:2px solid #45464f;border-radius:2px;margin:15px;display:grid;place-content:center;cursor:pointer}
+.goal-screen .goal input:checked{background:#5364db;border-color:#5364db}
+.goal-screen .goal input:checked::after{content:'';width:8px;height:4px;border-left:2px solid white;border-bottom:2px solid white;transform:rotate(-45deg) translateY(-1px)}
+.goal-screen #start{width:100%;border-radius:24px;background:#5364db;color:white;min-height:40px;padding:10px 24px;font-size:14px;font-weight:500}
+.goal-screen #start:disabled{background:#2024371f;color:#20243761;opacity:1}
+.goal-screen>footer{background:#f6f7fc}
+@media(max-width:720px){.goal-screen>header{height:48px}.goal-screen .onboarding{margin:0 auto}.goal-screen .goals{grid-template-columns:none}.session>div{min-width:0}.session strong{overflow-wrap:anywhere}}

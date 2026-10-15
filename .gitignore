@@ -4,5 +4,6 @@ __pycache__/
 *.pyc
 .env
 firebase-debug.log
+.firebase/
 artifacts/private/
 app/emulator-*.log

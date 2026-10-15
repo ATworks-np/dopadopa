@@ -1,0 +1,9 @@
+{
+  "hosting": {
+    "site": "dopadopa",
+    "public": "hosting",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "redirects": [{"source": "/", "destination": "/demo", "type": 302}],
+    "rewrites": [{"source": "**", "run": {"serviceId": "dopaguard-api", "region": "asia-northeast1"}}]
+  }
+}

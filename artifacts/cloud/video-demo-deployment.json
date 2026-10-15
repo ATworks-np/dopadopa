@@ -1,0 +1,20 @@
+{
+  "/": 200,
+  "/demo": 200,
+  "/assets/demo.js": 200,
+  "/assets/demo.css": 200,
+  "/assets/demo-base.css": 200,
+  "generation": 200,
+  "register": 200,
+  "analysis_http": 200,
+  "analysis_status": "insufficient_data",
+  "tools": [
+    "get_user_goals",
+    "get_timeline",
+    "get_content_events"
+  ],
+  "hosting_url": "https://dopadopa.web.app/demo",
+  "revision": "dopaguard-api-video-demo-1015",
+  "build_id": "1a89949b-cc0e-4609-bdf3-bcc058dd66c1",
+  "checked_at": "2026-10-15T14:32:26.407887+00:00"
+}

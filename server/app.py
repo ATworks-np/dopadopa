@@ -7,6 +7,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Header
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 from server.auth import authenticated_user
@@ -15,6 +16,10 @@ from server.store import MemoryStore, FirestoreStore, ConflictError, ExpiredSnap
 from server.live import SnapshotStoreView, read_snapshot
 
 app = FastAPI(title="DopaGuard", version="0.1.0")
+app.add_middleware(CORSMiddleware,
+    allow_origins=["https://dopadopa.web.app", "https://dopadopa.firebaseapp.com"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type", "X-DopaGuard-Generation"])
 from server.onboarding import Input as ConsultationInput
 
 log = logging.getLogger("dopaguard")
@@ -44,6 +49,10 @@ app.mount("/assets", StaticFiles(directory=WEB), name="assets")
 @app.get("/", include_in_schema=False)
 def web_demo():
     return FileResponse(WEB / "index.html")
+
+@app.get("/demo", include_in_schema=False)
+def video_demo():
+    return FileResponse(WEB / "demo.html")
 
 @app.exception_handler(ConflictError)
 async def store_conflict(request, exception):
@@ -93,6 +102,10 @@ async def limit_body(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Content-Security-Policy"] = "default-src 'self'; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; style-src 'self'; script-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
     response.headers["Referrer-Policy"] = "no-referrer"
+    if request.url.path == "/demo":
+        response.headers["Content-Security-Policy"] += "; media-src https://storage.googleapis.com"
+        response.headers["Content-Security-Policy"] = response.headers["Content-Security-Policy"].replace(
+            "connect-src 'self'", "connect-src 'self' https://dopaguard-api-463106527119.asia-northeast1.run.app")
     return response
 
 def valid_id(value):

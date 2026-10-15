@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DopaGuard | 動画デモ</title><link rel="stylesheet" href="/assets/demo.css"><script src="/assets/demo.js" defer></script></head>
+<body class="goal-screen">
+<header><a class="brand" href="/demo"><span class="logo">D</span>DopaGuard <small>VIDEO DEMO</small></a><button id="loginOpen" class="quiet">ログイン</button></header>
+<main>
+<section id="onboarding" class="onboarding">
+<div class="app-heading"><div>DopaGuard</div><p>あなたの目的から、はじめよう</p></div>
+<h1>YouTubeをどのように使いたいですか？</h1><p class="goal-help">当てはまるものを選んでください（複数選択可）</p>
+<div id="goals" class="goals" role="group" aria-label="利用目的（複数選択可）"></div><button id="start" class="primary" disabled>保存する</button><p class="fine">Webデモでは目的をこの画面内だけで保持します。</p>
+</section>
+<section id="watch" hidden>
+<div class="session"><div><span class="dot"></span> 今の目的 <strong id="currentGoal"></strong></div><button id="changeGoal" class="quiet">変更する ↗</button></div>
+<div class="watch-layout"><section class="watch-main"><div class="player"><video id="player" controls playsinline preload="metadata" aria-label="動画プレイヤー"></video></div><div class="video-meta"><span id="genre" class="eyebrow"></span><h1 id="videoTitle" tabindex="-1"></h1><p id="channel" class="muted"></p><p class="fine">デモ用タイトルです。再生映像はジャンル共通のサンプル動画です。</p><p id="playStatus" role="status"></p></div></section><aside class="guard"><div class="orb">✦</div><span class="eyebrow">YOUR WATCH COMPANION</span><h2>目的を、そっと<br>そばに。</h2><p>選んだ目的と、このデモでの動画選択をエージェントが調べます。</p><div class="guard-stat"><span>このセッションで選んだ動画</span><strong id="count">0 <small>本</small></strong></div><label class="agent-consent"><input type="checkbox" id="agentConsent">目的・操作履歴のクラウド保存とGeminiによる分析に同意する</label><button id="runAgent" class="primary" disabled>エージェントで分析</button><p id="agentStatus" role="status" aria-live="polite">ログインと同意が必要です。</p><details class="event-preview"><summary id="eventCount">記録中：0件</summary><div id="eventLog"></div><p class="fine">最新12件を表示。分析ボタンで最大100件をまとめて送信します。</p></details><div id="agentResult"></div><p class="fine">架空コンテンツを操作したデモデータとして送信します。映像自体の視聴は判定しません。結果は仮説です。</p></aside></div>
+<section class="recommendations" aria-label="動画一覧"><div id="filters" class="filters" aria-label="ジャンルで絞り込み"></div><div id="videos" class="videos"></div></section>
+</section>
+</main>
+<dialog id="loginDialog"><form id="loginForm"><button type="button" id="loginClose" class="close" aria-label="閉じる">×</button><span class="eyebrow">DOPAGUARD ACCOUNT</span><h2>ログインしてはじめる</h2><p class="muted">既存のFirebaseアカウントでログインしてください。</p><label>メールアドレス<input id="email" type="email" autocomplete="username" required></label><label>パスワード<input id="password" type="password" autocomplete="current-password" required></label><button class="primary" id="loginSubmit">ログイン</button><p id="authStatus" role="status"></p><p class="fine">トークンは画面内のメモリのみで保持し、パスワードは送信後に消去します。再読み込みでログアウトします。</p></form></dialog>
+<footer>DopaGuard <span>見たいものを、意図して見る。</span><a href="/">既存の分析画面 ↗</a></footer>
+</body></html>
