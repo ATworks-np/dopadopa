@@ -56,3 +56,14 @@ test('programmatic scrolling and hidden goal screen are not collected',()=>{
  h.run("$('watch').hidden=true;markUserScroll();recordScroll();observe('WINDOW_CHANGE','private screen');");
  assert.equal(h.run('observations.length'),0);
 });
+test('failed analysis explains timeout, validation and explicit 429 separately',async()=>{
+ const h=harness();
+ assert.match(h.run("analysisFailureMessage({failure_stage:'engine_deadline'})"),/制限時間/);
+ assert.match(h.run("analysisFailureMessage({failure_stage:'engine_result_validation'})"),/検証/);
+ assert.match(h.run("analysisFailureMessage({engine_http_status:429})"),/429/);
+ assert.doesNotMatch(h.run("analysisFailureMessage({failure_stage:'engine_model_execution'})"),/429/);
+ h.run("agentAuth={token:'test-token',expires:Date.now()+60000};savedGoals=new Set(['学習']);$('agentConsent').checked=true;observe('CLICK','数学');");
+ const original=h.context.fetch;
+ h.context.fetch=async(url,opts)=>url==='/v1/analyses'?{ok:true,json:async()=>({status:'failed',analysis_id:'a-test',failure_stage:'engine_deadline'})}:original(url,opts);
+ await h.nodes.get('runAgent').onclick();assert.match(h.nodes.get('agentStatus').textContent,/制限時間/);
+});

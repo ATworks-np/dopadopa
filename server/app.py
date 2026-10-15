@@ -25,6 +25,7 @@ from server.onboarding import Input as ConsultationInput
 log = logging.getLogger("dopaguard")
 # Closed vocabulary. Exception text, IDs, tokens, and observation text are never logged.
 DIAGNOSTIC_STAGES = {"configuration", "service_credentials", "engine_transport", "engine_http_rejection",
+    "engine_deadline",
     "engine_output", "engine_model_execution", "engine_model_deadline", "engine_result_validation",
     "model_execution", "model_deadline", "result_validation", "generation_validation", "trace_validation",
     "local_runner"}
@@ -191,6 +192,10 @@ def analyze(body: AnalyzeInput, uid=Depends(authenticated_user), store=Depends(g
         record.update(status="insufficient_data" if result.goal_alignment == "unknown" and not result.segments else "completed", result=result.model_dump(mode="json"), trace=trace)
     except Exception:
         record.update(status="failed", error="analysis unavailable; retry later")
+        record["failure_stage"] = diagnostic_stage(locals().get("runner"))
+        http_status = getattr(locals().get("runner"), "engine_http_status", None)
+        if type(http_status) is int and 400 <= http_status <= 599:
+            record["engine_http_status"] = http_status
         # No exception messages, request arguments, IDs, or tokens in diagnostics.
         log.warning("analysis_failure stage=%s", diagnostic_stage(locals().get("runner")))
         record["trace"] = getattr(locals().get("runner"), "trace", [])

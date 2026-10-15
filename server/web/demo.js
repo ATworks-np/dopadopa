@@ -74,6 +74,15 @@ async function agentRequest(path,headers,body){
  const response=await fetch(apiOrigin+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined,signal:agentController.signal,cache:'no-store'});
  if(!response.ok){const error=new Error('request');error.status=response.status;throw error;}return response.json();
 }
+function analysisFailureMessage(record){
+ if(record.engine_http_status===429)return 'エージェント側が混雑しています（429）。少し時間を置いて再実行してください。';
+ if(record.failure_stage==='engine_deadline'||record.failure_stage==='engine_model_deadline')return 'エージェントの応答待ちが制限時間を超えました。少し時間を置いて再実行してください。';
+ if(['engine_result_validation','result_validation','trace_validation'].includes(record.failure_stage))return 'AIの回答が検証に通らなかったため、結果を表示できませんでした。再実行してください。';
+ if(record.failure_stage==='engine_model_execution')return 'エージェント内のAI呼び出しが失敗しました。一時的な混雑の可能性もあります。少し時間を置いて再実行してください。';
+ if(record.failure_stage==='engine_transport')return 'エージェントへの接続に失敗しました。少し時間を置いて再実行してください。';
+ if(['configuration','service_credentials'].includes(record.failure_stage))return 'サーバー側のエージェント設定・認証で失敗しました。管理側での確認が必要です。';
+ return 'エージェントの分析が失敗しました。少し時間を置いて再実行してください。';
+}
 $('agentConsent').onchange=()=>{observations=[];cancelAgent($('agentConsent').checked?'同意しました。ここからの操作を記録します。':'同意を解除しました。送信済みデータは既存の分析画面から削除できます。');if($('agentConsent').checked&&selected!==null)observe('WINDOW_CHANGE',videos[selected].title);};
 $('runAgent').onclick=async()=>{
  if($('runAgent').disabled)return;
@@ -88,7 +97,14 @@ $('runAgent').onclick=async()=>{
   await agentRequest('/v1/sessions:batch',{...headers,'X-DopaGuard-Generation':String(generation.generation)},batch);if(revision!==agentEpoch)return;
   $('agentStatus').textContent='エージェントが目的・操作履歴・転換点を調べています…';
   const record=await agentRequest('/v1/analyses',headers,{session_id:sessionId});if(revision!==agentEpoch)return;
-  if(record.status==='failed')throw new Error('agent');
+  if(record.status==='failed'){
+   $('agentStatus').textContent=analysisFailureMessage(record);
+   const detail=element('details',null,$('agentResult'));element('summary','失敗の詳細',detail);
+   element('p',`分析ID：${record.analysis_id||'不明'}`,detail);
+   element('p',`失敗段階：${record.failure_stage||'不明'}`,detail);
+   if(record.engine_http_status)element('p',`HTTP：${record.engine_http_status}`,detail);
+   element('p','送信済みの履歴は保存されています。',$('agentResult'),'fine');return;
+  }
   $('agentStatus').textContent=record.status==='insufficient_data'?'分析完了：判断するための情報が不足しています。':'分析完了（デモデータに対する仮説）';
   const result=record.result;if(!result)return;
   element('h3',({aligned:'目的に沿っている可能性',possibly_diverged:'目的から離れた可能性',unknown:'関連は不明'})[result.goal_alignment]||'分析結果',$('agentResult'));

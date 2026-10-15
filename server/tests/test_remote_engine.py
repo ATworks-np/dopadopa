@@ -8,6 +8,21 @@ from server.store import MemoryStore
 from server.samples import sample_batch
 
 class RemoteEngineTest(unittest.TestCase):
+    def test_response_timeout_has_a_distinct_safe_diagnostic(self):
+        import requests
+        batch = sample_batch('learning-only').model_dump(mode='json')
+        store = MemoryStore()
+        store.put('owner', 'sessions', batch['session_id'], batch)
+        credentials = SimpleNamespace(token='fictional', refresh=lambda request: None)
+        env = {'AGENT_ENGINE_RESOURCE': 'projects/463106527119/locations/asia-northeast1/reasoningEngines/1'}
+        with patch.dict('os.environ', env), patch('server.remote_engine.google.auth.default', return_value=(credentials, None)), \
+                patch('server.remote_engine.requests.post', side_effect=requests.ReadTimeout('sensitive provider body')) as post:
+            runner = RemoteEngineRunner(store, 'Bearer fictional')
+            with self.assertRaisesRegex(RuntimeError, '^engine response timed out$'):
+                runner.run('owner', batch['session_id'], 'a-test')
+            self.assertEqual('engine_deadline', runner.failure_stage)
+            self.assertEqual(1, post.call_count)
+
     def test_bounds_transport_and_revalidates_returned_identity(self):
         batch = sample_batch("learning-only").model_dump(mode="json")
         store = MemoryStore()

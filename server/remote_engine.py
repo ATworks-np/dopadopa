@@ -44,9 +44,14 @@ class RemoteEngineRunner:
                 if snapshot_id is not None: view.get(uid, "sessions", session_id)
             remaining = deadline - time.monotonic()
             if remaining <= 0: raise RuntimeError("engine deadline")
-            with requests.post("https://" + match[2] + "-aiplatform.googleapis.com/v1/" + resource + ":query",
+            try:
+                response_context = requests.post("https://" + match[2] + "-aiplatform.googleapis.com/v1/" + resource + ":query",
                 headers={"Authorization": "Bearer " + credentials.token}, json=payload,
-                timeout=(min(20, remaining), remaining), stream=True, allow_redirects=False) as response:
+                timeout=(min(20, remaining), remaining), stream=True, allow_redirects=False)
+            except requests.Timeout:
+                self.failure_stage = "engine_deadline"
+                raise RuntimeError("engine response timed out") from None
+            with response_context as response:
                 self.engine_http_status = response.status_code
                 if response.status_code != 200:
                     self.failure_stage = "engine_http_rejection"

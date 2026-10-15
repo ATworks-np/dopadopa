@@ -23,9 +23,11 @@ class ApiTest(unittest.TestCase):
              patch("server.remote_engine.RemoteEngineRunner") as runner:
             runner.return_value.run.side_effect = RuntimeError("fictional provider detail")
             runner.return_value.trace = []
+            runner.return_value.failure_stage = 'engine_deadline'
             result = self.client.post("/v1/analyses", json={"session_id": "s1"},
                 headers={"Authorization": "Bearer fictional-token"}).json()
             self.assertEqual("failed", result["status"])
+            self.assertEqual('engine_deadline', result['failure_stage'])
             self.assertNotIn("fictional provider detail", str(result))
             runner.assert_called_once_with(self.store, "Bearer fictional-token")
             self.assertEqual("alice", runner.return_value.run.call_args.args[0])
